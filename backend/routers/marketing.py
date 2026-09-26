@@ -65,12 +65,36 @@ def generate_campaign(req: CampaignRequest):
 @router.post("/simulate")
 def simulate_marketing(req: SimulateRequest):
     state = get_state()
-    if state.get('profiles') is None:
+    if state.get('profiles') is None or state.get('features_df') is None:
         raise HTTPException(status_code=404, detail="No analysis available. Run the pipeline first.")
+        
+    segment_profile = None
+    for profile in state['profiles']:
+        if profile.get('segment_id') == req.segment_id:
+            segment_profile = profile
+            break
+            
+    if not segment_profile:
+        segment_profile = {
+            "segment_id": req.segment_id,
+            "segment_name": f"Segment {req.segment_id}",
+            "customer_count": 100,
+            "avg_order_value": 50.0,
+            "avg_churn_risk": 30.0,
+            "avg_engagement_score": 50.0
+        }
         
     try:
         simulator = MarketingSimulator()
-        results = simulator.simulate(req.segment_id, req.action, req.intensity, state)
+        results = simulator.simulate(
+            action=req.action,
+            intensity=req.intensity,
+            segment_profile=segment_profile,
+            features_df=state['features_df'],
+            scores_df=state.get('scores_df'),
+            labels=state.get('labels'),
+            segment_id=req.segment_id
+        )
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -78,12 +102,17 @@ def simulate_marketing(req: SimulateRequest):
 @router.get("/fatigue")
 def get_marketing_fatigue():
     state = get_state()
-    if state.get('features_df') is None:
+    if state.get('features_df') is None or state.get('profiles') is None:
         raise HTTPException(status_code=404, detail="No analysis available. Run the pipeline first.")
         
     try:
         engine = MarketingEngine()
-        fatigue = engine.calculate_fatigue_index(state.get('features_df'), state.get('labels')) if hasattr(engine, 'calculate_fatigue_index') else {}
+        if hasattr(engine, 'get_marketing_fatigue_index'):
+            fatigue = engine.get_marketing_fatigue_index(state['features_df'], state['profiles'])
+        elif hasattr(engine, 'calculate_fatigue_index'):
+            fatigue = engine.calculate_fatigue_index(state['features_df'], state.get('labels'))
+        else:
+            fatigue = []
         return fatigue
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

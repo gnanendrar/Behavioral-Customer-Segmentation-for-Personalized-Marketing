@@ -1,6 +1,18 @@
 import pandas as pd
 import numpy as np
-from fuzzywuzzy import process
+try:
+    from fuzzywuzzy import process
+except ImportError:
+    import difflib
+    class _FuzzyProcess:
+        @staticmethod
+        def extractOne(query, choices):
+            matches = difflib.get_close_matches(query, choices, n=1, cutoff=0.0)
+            if matches:
+                ratio = difflib.SequenceMatcher(None, query, matches[0]).ratio() * 100
+                return matches[0], ratio
+            return (choices[0] if choices else ""), 0
+    process = _FuzzyProcess()
 from sklearn.preprocessing import StandardScaler
 from typing import Dict, List, Any
 import os

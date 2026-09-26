@@ -1,24 +1,17 @@
-import React from 'react';
 import { Download, FileText, Database, Layers, CheckCircle } from 'lucide-react';
 import PageHeader from '../components/common/PageHeader';
-import useAppStore from '../stores/appStore';
+import { useAppStore } from '../stores/appStore';
+import { exportSegmentsCSV, exportCustomersCSV, exportReportPDF } from '../services/api';
 
-// Determine the base API URL dynamically based on current origin if not provided, assuming standard backend port
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
-
-const Reports: React.FC = () => {
-  const { customers, segments, lastUpdated } = useAppStore();
-
-  const exportSegmentsCSV = `${API_BASE_URL}/export/segments/csv`;
-  const exportCustomersCSV = `${API_BASE_URL}/export/customers/csv`;
-  const exportReportPDF = `${API_BASE_URL}/export/report/pdf`;
+const Reports = () => {
+  const { customers = [], segments = [], lastUpdated } = useAppStore();
 
   const cards = [
     {
       title: 'Segment Definitions',
       description: 'Download the comprehensive list of behavioral segments, including their centroids, stats, and recommended actions.',
       icon: <Layers className="w-8 h-8 text-indigo-500" />,
-      url: exportSegmentsCSV,
+      url: exportSegmentsCSV(),
       type: 'CSV',
       features: ['Segment Names & IDs', 'Centroid coordinates', 'Customer count & avg value', 'Strategic recommendations']
     },
@@ -26,7 +19,7 @@ const Reports: React.FC = () => {
       title: 'Full Customer Dataset',
       description: 'Export the complete dataset containing all customers mapped to their assigned segments and calculated scores.',
       icon: <Database className="w-8 h-8 text-green-500" />,
-      url: exportCustomersCSV,
+      url: exportCustomersCSV(),
       type: 'CSV',
       features: ['Customer IDs', 'Raw behavioral metrics', 'Assigned Segment ID', 'Churn Risk & Value Score']
     },
@@ -34,7 +27,7 @@ const Reports: React.FC = () => {
       title: 'Executive Summary',
       description: 'Generate a polished PDF report containing high-level insights, revenue projections, and key segment performance.',
       icon: <FileText className="w-8 h-8 text-red-500" />,
-      url: exportReportPDF,
+      url: exportReportPDF(),
       type: 'PDF',
       features: ['Visual charts & graphs', 'Revenue autopsy', 'Cohort analysis summary', 'Model evaluation summary']
     }
@@ -51,8 +44,8 @@ const Reports: React.FC = () => {
         <div>
           <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Current Analysis Snapshot</h3>
           <div className="mt-2 flex items-center space-x-6 text-sm text-gray-900">
-            <div className="flex items-center"><Layers className="w-4 h-4 mr-2 text-indigo-500" /> <b>{segments.length}</b> &nbsp;Segments</div>
-            <div className="flex items-center"><Database className="w-4 h-4 mr-2 text-green-500" /> <b>{customers.length.toLocaleString()}</b> &nbsp;Customers</div>
+            <div className="flex items-center"><Layers className="w-4 h-4 mr-2 text-indigo-500" /> <b>{segments?.length || 0}</b> &nbsp;Segments</div>
+            <div className="flex items-center"><Database className="w-4 h-4 mr-2 text-green-500" /> <b>{(customers?.length || 0).toLocaleString()}</b> &nbsp;Customers</div>
             <div className="flex items-center text-gray-500">Last run: {lastUpdated ? new Date(lastUpdated).toLocaleString() : 'N/A'}</div>
           </div>
         </div>

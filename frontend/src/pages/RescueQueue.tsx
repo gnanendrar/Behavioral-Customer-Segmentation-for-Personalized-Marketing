@@ -1,23 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { 
-  AlertTriangle, Users, DollarSign, Activity, ChevronUp, ChevronDown, LifeBuoy 
+  Users, DollarSign, Activity, ChevronUp, ChevronDown, LifeBuoy 
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { getRescueQueue } from '../services/api';
-import { Customer } from '../types';
+import type { Customer } from '../types';
 import PageHeader from '../components/common/PageHeader';
 import StatCard from '../components/common/StatCard';
-import useAppStore from '../stores/appStore';
 import { Link } from 'react-router-dom';
 
 const COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#EF4444', '#F59E0B', '#10B981', '#06B6D4', '#3B82F6', '#14B8A6', '#A855F7'];
 
-const RescueQueue: React.FC = () => {
-  const { customers } = useAppStore();
+const RescueQueue = () => {
   const [queue, setQueue] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortField, setSortField] = useState<keyof Customer>('rescue_priority');
+  const [sortField, setSortField] = useState<keyof Customer>('rescue_priority_score');
   const [sortAsc, setSortAsc] = useState(false);
 
   useEffect(() => {
@@ -25,7 +22,8 @@ const RescueQueue: React.FC = () => {
       setLoading(true);
       try {
         const data = await getRescueQueue();
-        setQueue(data.slice(0, 50)); // top 50
+        const list = Array.isArray(data) ? data : (data?.queue || []);
+        setQueue(list.slice(0, 50)); // top 50
       } catch (err) {
         console.error('Failed to load rescue queue', err);
       } finally {
@@ -45,8 +43,8 @@ const RescueQueue: React.FC = () => {
   };
 
   const sortedQueue = [...queue].sort((a, b) => {
-    const aVal = a[sortField] ?? 0;
-    const bVal = b[sortField] ?? 0;
+    const aVal = (a as any)[sortField] ?? 0;
+    const bVal = (b as any)[sortField] ?? 0;
     if (aVal < bVal) return sortAsc ? -1 : 1;
     if (aVal > bVal) return sortAsc ? 1 : -1;
     return 0;
@@ -54,12 +52,13 @@ const RescueQueue: React.FC = () => {
 
   const totalAtRisk = queue.length;
   const totalRevenueAtRisk = queue.reduce((sum, c) => sum + (c.revenue_at_risk || 0), 0);
-  const avgPriority = queue.length ? queue.reduce((sum, c) => sum + (c.rescue_priority || 0), 0) / queue.length : 0;
+  const avgPriority = queue.length ? queue.reduce((sum, c) => sum + (c.rescue_priority_score ?? c.rescue_priority ?? 0), 0) / queue.length : 0;
   
   // segment distribution
   const segmentCounts: Record<string, number> = {};
   queue.forEach(c => {
-    segmentCounts[c.segment_name] = (segmentCounts[c.segment_name] || 0) + 1;
+    const segName = c.segment_name || 'Unassigned';
+    segmentCounts[segName] = (segmentCounts[segName] || 0) + 1;
   });
   const segmentChartData = Object.keys(segmentCounts).map(name => ({
     name,
@@ -68,15 +67,20 @@ const RescueQueue: React.FC = () => {
   
   const mostUrgentSegment = segmentChartData.length > 0 ? segmentChartData[0].name : 'N/A';
 
+  const getNormPriority = (c: Customer) => {
+    const raw = c.rescue_priority_score ?? c.rescue_priority ?? 0;
+    return raw > 1 ? raw / 100 : raw;
+  };
+
   const getUrgencyColor = (priority: number) => {
-    if (priority >= 0.8) return 'bg-red-50 hover:bg-red-100';
-    if (priority >= 0.5) return 'bg-yellow-50 hover:bg-yellow-100';
+    if (priority >= 0.7) return 'bg-red-50 hover:bg-red-100';
+    if (priority >= 0.4) return 'bg-yellow-50 hover:bg-yellow-100';
     return 'bg-white hover:bg-gray-50';
   };
   
   const getPriorityBarColor = (priority: number) => {
-    if (priority >= 0.8) return 'bg-red-500';
-    if (priority >= 0.5) return 'bg-yellow-500';
+    if (priority >= 0.7) return 'bg-red-500';
+    if (priority >= 0.4) return 'bg-yellow-500';
     return 'bg-green-500';
   };
 
@@ -99,20 +103,23 @@ const RescueQueue: React.FC = () => {
           icon={<DollarSign className="text-red-500" />} 
         />
         <StatCard 
-          title="Avg Rescue Priority" 
-          value={avgPriority.toFixed(2)} 
-          icon={<AlertTriangle className="text-yellow-500" />} 
+          title="Avg Risk Priority" 
+          value={avgPriority > 1 ? `${avgPriority.toFixed(1)}/100` : `${(avgPriority * 100).toFixed(1)}%`} 
+          icon={<Activity className="text-purple-500" />} 
         />
         <StatCard 
-          title="Most Urgent Segment" 
+          title="Highest Risk Segment" 
           value={mostUrgentSegment} 
-          icon={<Activity className="text-blue-500" />} 
+          icon={<Users className="text-yellow-500" />} 
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-lg shadow p-6 border border-gray-100 overflow-hidden">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">Priority Queue</h3>
+        <div className="bg-white rounded-lg shadow border border-gray-100 overflow-hidden lg:col-span-2">
+          <div className="p-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-800">Priority Intervention Queue</h3>
+            <p className="text-sm text-gray-500">Customers sorted by likelihood of churn and monetary value</p>
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50">
@@ -122,8 +129,8 @@ const RescueQueue: React.FC = () => {
                   <th scope="col" className="px-3 py-3 text-left font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('segment_name')}>
                     Segment {sortField === 'segment_name' && (sortAsc ? <ChevronUp className="inline w-4 h-4"/> : <ChevronDown className="inline w-4 h-4"/>)}
                   </th>
-                  <th scope="col" className="px-3 py-3 text-left font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('rescue_priority')}>
-                    Priority {sortField === 'rescue_priority' && (sortAsc ? <ChevronUp className="inline w-4 h-4"/> : <ChevronDown className="inline w-4 h-4"/>)}
+                  <th scope="col" className="px-3 py-3 text-left font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('rescue_priority_score')}>
+                    Priority {sortField === 'rescue_priority_score' && (sortAsc ? <ChevronUp className="inline w-4 h-4"/> : <ChevronDown className="inline w-4 h-4"/>)}
                   </th>
                   <th scope="col" className="px-3 py-3 text-left font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onClick={() => handleSort('revenue_at_risk')}>
                     Revenue Risk {sortField === 'revenue_at_risk' && (sortAsc ? <ChevronUp className="inline w-4 h-4"/> : <ChevronDown className="inline w-4 h-4"/>)}
@@ -134,35 +141,46 @@ const RescueQueue: React.FC = () => {
               <tbody className="divide-y divide-gray-200">
                 {loading ? (
                   <tr><td colSpan={6} className="text-center py-4">Loading...</td></tr>
+                ) : sortedQueue.length === 0 ? (
+                  <tr><td colSpan={6} className="text-center py-8 text-gray-500">No at-risk customers found. Run the pipeline first.</td></tr>
                 ) : (
-                  sortedQueue.map((customer, idx) => (
-                    <tr key={customer.id} className={getUrgencyColor(customer.rescue_priority || 0)}>
-                      <td className="px-3 py-4 whitespace-nowrap text-gray-900 font-medium">{idx + 1}</td>
-                      <td className="px-3 py-4 whitespace-nowrap text-indigo-600 font-medium hover:underline">
-                        <Link to={`/customer/${customer.id}`}>{customer.id.substring(0, 8)}</Link>
-                      </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-gray-700">{customer.segment_name}</td>
-                      <td className="px-3 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <span className="text-gray-700 mr-2">{(customer.rescue_priority || 0).toFixed(2)}</span>
-                          <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full ${getPriorityBarColor(customer.rescue_priority || 0)}`} 
-                              style={{ width: `${(customer.rescue_priority || 0) * 100}%` }}
-                            ></div>
+                  sortedQueue.map((customer, idx) => {
+                    const cid = String(customer.customer_id || customer.id || '');
+                    const normPri = getNormPriority(customer);
+                    const dispPri = customer.rescue_priority_score ?? customer.rescue_priority ?? 0;
+
+                    return (
+                      <tr key={cid || idx} className={getUrgencyColor(normPri)}>
+                        <td className="px-3 py-4 whitespace-nowrap text-gray-900 font-medium">{idx + 1}</td>
+                        <td className="px-3 py-4 whitespace-nowrap text-indigo-600 font-medium hover:underline">
+                          <Link to={`/customer/${cid}`}>{cid.substring(0, 10)}</Link>
+                        </td>
+                        <td className="px-3 py-4 whitespace-nowrap text-gray-700">{customer.segment_name}</td>
+                        <td className="px-3 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <span className="text-gray-700 mr-2">{dispPri.toFixed(1)}</span>
+                            <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full ${getPriorityBarColor(normPri)}`} 
+                                style={{ width: `${Math.min(100, normPri * 100)}%` }}
+                              ></div>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-gray-700 font-medium">
-                        ${(customer.revenue_at_risk || 0).toFixed(2)}
-                      </td>
-                      <td className="px-3 py-4 whitespace-nowrap text-right">
-                        <button className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                          <LifeBuoy className="w-3 h-3 mr-1" /> Rescue
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td className="px-3 py-4 whitespace-nowrap text-gray-700 font-medium">
+                          ${(customer.revenue_at_risk || 0).toFixed(2)}
+                        </td>
+                        <td className="px-3 py-4 whitespace-nowrap text-right">
+                          <Link 
+                            to={`/customer/${cid}`}
+                            className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                          >
+                            <LifeBuoy className="w-3 h-3 mr-1" /> Rescue
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -183,7 +201,7 @@ const RescueQueue: React.FC = () => {
                 <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} />
                 <Tooltip cursor={{fill: 'rgba(0,0,0,0.05)'}} />
                 <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                  {segmentChartData.map((entry, index) => (
+                  {segmentChartData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Bar>

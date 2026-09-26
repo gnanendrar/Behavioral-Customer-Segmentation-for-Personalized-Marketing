@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, Sparkles, ChevronRight } from 'lucide-react';
 import { askCopilot } from '../services/api';
 import { motion } from 'framer-motion';
@@ -46,13 +46,17 @@ export default function AICopilot() {
 
     try {
       const response = await askCopilot(userMsg);
+      const answer = response.answer || response.response?.answer || response.response || (typeof response === 'string' ? response : JSON.stringify(response));
+      const responseData = response.data || response.response?.data;
+      const suggested = response.suggested_followups || response.response?.suggested_followups;
+
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: response.answer,
-        data: response.data 
+        content: answer,
+        data: responseData 
       }]);
-      if (response.suggested_followups) {
-        setFollowups(response.suggested_followups);
+      if (suggested && Array.isArray(suggested)) {
+        setFollowups(suggested);
       }
     } catch (error) {
       console.error("Copilot error", error);

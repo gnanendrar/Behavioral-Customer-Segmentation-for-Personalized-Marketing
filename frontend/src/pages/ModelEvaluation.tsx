@@ -1,21 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Activity, CheckCircle, Database, Layers, RefreshCw } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { useState, useEffect } from 'react';
+import { CheckCircle, RefreshCw } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
 import { getModelEvaluation, getModelComparison, runAnalysis } from '../services/api';
-import { ModelMetrics } from '../types';
+import type { ModelMetrics } from '../types';
 import PageHeader from '../components/common/PageHeader';
-import useAppStore from '../stores/appStore';
+import { useAppStore } from '../stores/appStore';
+import { TruncatedXAxisTick, ModernChartTooltip } from '../components/common/ChartHelpers';
 
-const ModelEvaluation: React.FC = () => {
+const ModelEvaluation = () => {
   const { setLastUpdated } = useAppStore();
   const [evaluation, setEvaluation] = useState<ModelMetrics | null>(null);
   const [comparison, setComparison] = useState<ModelMetrics[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -23,13 +20,17 @@ const ModelEvaluation: React.FC = () => {
       const evalData = await getModelEvaluation();
       const compData = await getModelComparison();
       setEvaluation(evalData);
-      setComparison(compData);
+      setComparison(Array.isArray(compData) ? compData : (compData?.comparison || []));
     } catch (err) {
       console.error('Failed to load model data', err);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const handleRunAnalysis = async () => {
     setRunning(true);
@@ -54,10 +55,10 @@ const ModelEvaluation: React.FC = () => {
   };
 
   const chartData = comparison.map(c => ({
-    name: `${c.algorithm} (k=${c.k})`,
+    name: `${c.algorithm} (k=${c.k ?? c.n_clusters ?? ''})`,
     Algorithm: c.algorithm,
-    Silhouette: c.silhouette_score,
-    DaviesBouldin: c.davies_bouldin_score
+    Silhouette: c.silhouette_score ?? 0,
+    DaviesBouldin: c.davies_bouldin_score ?? 0
   }));
 
   return (
@@ -88,7 +89,7 @@ const ModelEvaluation: React.FC = () => {
               <p className="text-indigo-100 mb-6">Selected automatically based on composite performance rank</p>
             </div>
             <div className="text-right">
-              <span className="text-3xl font-bold">{evaluation.k}</span>
+              <span className="text-3xl font-bold">{evaluation.k ?? evaluation.n_clusters}</span>
               <p className="text-indigo-100 text-sm">Optimal Clusters</p>
             </div>
           </div>
@@ -96,22 +97,22 @@ const ModelEvaluation: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white/10 rounded-lg p-4">
             <div>
               <p className="text-indigo-100 text-xs uppercase tracking-wider mb-1">Silhouette Score</p>
-              <p className="text-xl font-semibold">{evaluation.silhouette_score.toFixed(3)}</p>
-              <p className="text-xs text-indigo-200 mt-1">{getSilhouetteInterpretation(evaluation.silhouette_score)}</p>
+              <p className="text-xl font-semibold">{(evaluation.silhouette_score ?? 0).toFixed(3)}</p>
+              <p className="text-xs text-indigo-200 mt-1">{getSilhouetteInterpretation(evaluation.silhouette_score ?? 0)}</p>
             </div>
             <div>
               <p className="text-indigo-100 text-xs uppercase tracking-wider mb-1">Davies-Bouldin</p>
-              <p className="text-xl font-semibold">{evaluation.davies_bouldin_score.toFixed(3)}</p>
+              <p className="text-xl font-semibold">{(evaluation.davies_bouldin_score ?? 0).toFixed(3)}</p>
               <p className="text-xs text-indigo-200 mt-1">Lower is better</p>
             </div>
             <div>
               <p className="text-indigo-100 text-xs uppercase tracking-wider mb-1">Calinski-Harabasz</p>
-              <p className="text-xl font-semibold">{evaluation.calinski_harabasz_score.toFixed(0)}</p>
+              <p className="text-xl font-semibold">{(evaluation.calinski_harabasz_score ?? 0).toFixed(0)}</p>
               <p className="text-xs text-indigo-200 mt-1">Higher is better</p>
             </div>
             <div>
               <p className="text-indigo-100 text-xs uppercase tracking-wider mb-1">Features</p>
-              <p className="text-xl font-semibold">12</p>
+              <p className="text-xl font-semibold">{evaluation.feature_count || 12}</p>
               <p className="text-xs text-indigo-200 mt-1">Behavioral metrics</p>
             </div>
           </div>
@@ -124,12 +125,16 @@ const ModelEvaluation: React.FC = () => {
           <p className="text-sm text-gray-500 mb-4">Higher is better. Measures how similar an object is to its own cluster compared to other clusters.</p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 25 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} tick={{fontSize: 10}} />
-                <YAxis domain={[0, 1]} />
-                <Tooltip />
-                <Bar dataKey="Silhouette">
+              <BarChart data={chartData} margin={{ top: 10, right: 15, left: 0, bottom: 45 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="name" 
+                  interval={0}
+                  tick={<TruncatedXAxisTick maxChars={13} angle={-35} />} 
+                />
+                <YAxis domain={[0, 1]} tick={{ fontSize: 11, fill: '#64748B' }} />
+                <ModernChartTooltip />
+                <Bar dataKey="Silhouette" radius={[4, 4, 0, 0]}>
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.Algorithm === 'kmeans' ? '#6366F1' : '#10B981'} />
                   ))}
@@ -144,12 +149,16 @@ const ModelEvaluation: React.FC = () => {
           <p className="text-sm text-gray-500 mb-4">Lower is better. Measures the ratio of within-cluster scatter to between-cluster separation.</p>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 25 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} tick={{fontSize: 10}} />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="DaviesBouldin">
+              <BarChart data={chartData} margin={{ top: 10, right: 15, left: 0, bottom: 45 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="name" 
+                  interval={0}
+                  tick={<TruncatedXAxisTick maxChars={13} angle={-35} />} 
+                />
+                <YAxis tick={{ fontSize: 11, fill: '#64748B' }} />
+                <ModernChartTooltip />
+                <Bar dataKey="DaviesBouldin" radius={[4, 4, 0, 0]}>
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.Algorithm === 'kmeans' ? '#F59E0B' : '#EC4899'} />
                   ))}
@@ -175,17 +184,19 @@ const ModelEvaluation: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {comparison.map((c, i) => {
-                const isActive = evaluation && c.algorithm === evaluation.algorithm && c.k === evaluation.k;
+                const cK = c.k ?? c.n_clusters;
+                const evalK = evaluation?.k ?? evaluation?.n_clusters;
+                const isActive = evaluation && c.algorithm === evaluation.algorithm && cK === evalK;
                 return (
                   <tr key={i} className={isActive ? 'bg-indigo-50/50' : 'hover:bg-gray-50'}>
                     <td className="px-3 py-3 whitespace-nowrap font-medium text-gray-900 flex items-center">
                       {isActive && <CheckCircle className="w-4 h-4 text-indigo-600 mr-2" />}
                       <span className="capitalize">{c.algorithm}</span>
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap text-center text-gray-700">{c.k}</td>
-                    <td className="px-3 py-3 whitespace-nowrap text-right font-medium text-gray-900">{c.silhouette_score.toFixed(4)}</td>
-                    <td className="px-3 py-3 whitespace-nowrap text-right text-gray-700">{c.davies_bouldin_score.toFixed(4)}</td>
-                    <td className="px-3 py-3 whitespace-nowrap text-right text-gray-700">{c.calinski_harabasz_score.toFixed(0)}</td>
+                    <td className="px-3 py-3 whitespace-nowrap text-center text-gray-700">{cK ?? 'N/A'}</td>
+                    <td className="px-3 py-3 whitespace-nowrap text-right font-medium text-gray-900">{(c.silhouette_score ?? 0).toFixed(4)}</td>
+                    <td className="px-3 py-3 whitespace-nowrap text-right text-gray-700">{(c.davies_bouldin_score ?? 0).toFixed(4)}</td>
+                    <td className="px-3 py-3 whitespace-nowrap text-right text-gray-700">{(c.calinski_harabasz_score ?? 0).toFixed(0)}</td>
                   </tr>
                 );
               })}

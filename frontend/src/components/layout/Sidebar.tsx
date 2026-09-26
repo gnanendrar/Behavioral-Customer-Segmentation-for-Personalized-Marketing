@@ -1,4 +1,4 @@
-import React from 'react';
+import { Fragment } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -60,14 +60,14 @@ export default function Sidebar() {
 
       <div className="flex flex-1 flex-col overflow-y-auto px-3 py-4 custom-scrollbar">
         <nav className="flex-1 space-y-1">
-          {navigation.map((item, index) => {
+          {navigation.map((item) => {
             const Icon = item.icon;
             
             // Add dividers after specific items
             const showDivider = ['/features', '/marketing', '/simulator'].includes(item.href);
 
             return (
-              <React.Fragment key={item.name}>
+              <Fragment key={item.name}>
                 <NavLink
                   to={item.href}
                   className={({ isActive }) =>
@@ -88,7 +88,7 @@ export default function Sidebar() {
                 {showDivider && (
                   <div className="my-2 border-t border-gray-100" />
                 )}
-              </React.Fragment>
+              </Fragment>
             );
           })}
         </nav>

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Search, Filter, Beaker } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Search, Beaker } from 'lucide-react';
 import { getFeatureStore } from '../services/api';
 import PageHeader from '../components/common/PageHeader';
 
@@ -23,7 +23,8 @@ const FeatureStore = () => {
     const fetchFeatures = async () => {
       try {
         const data = await getFeatureStore();
-        setFeatures(data.features || []);
+        const list = Array.isArray(data) ? data : (data?.features || []);
+        setFeatures(list);
       } catch (err: any) {
         setError(err.message || 'Failed to load feature store');
       } finally {

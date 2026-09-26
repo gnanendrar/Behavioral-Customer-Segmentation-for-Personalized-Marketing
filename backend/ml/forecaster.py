@@ -60,7 +60,7 @@ class RevenueForecaster:
 
             # Project
             projected_revenue = daily_rate * horizon_days * trend_factor
-            confidence_width = projected_revenue * self._confidence_spread(profile, len(seg_features[mask]))
+            confidence_width = projected_revenue * self._confidence_spread(profile, len(seg_features))
 
             # Growth classification
             growth_pct = (trend_factor - 1.0) * 100

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { Bell, Menu, Moon, Sun, Activity } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
@@ -6,7 +5,6 @@ import { useAppStore } from '../../stores/appStore';
 export default function TopBar() {
   const location = useLocation();
   const { 
-    sidebarOpen, 
     toggleSidebar, 
     notificationCount, 
     pipelineStatus,

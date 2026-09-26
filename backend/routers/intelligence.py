@@ -13,12 +13,16 @@ router = APIRouter()
 @router.get("/revenue-autopsy")
 def get_revenue_autopsy():
     state = get_state()
-    if state.get('features_df') is None:
+    if state.get('features_df') is None or state.get('profiles') is None or state.get('labels') is None:
         raise HTTPException(status_code=404, detail="No data available. Run the pipeline first.")
         
     try:
         autopsy = RevenueAutopsy()
-        results = autopsy.analyze(state['features_df'], state.get('scores_df')) if hasattr(autopsy, 'analyze') else {}
+        results = autopsy.analyze(
+            features_df=state['features_df'],
+            profiles=state.get('profiles', []),
+            labels=state['labels']
+        )
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -26,12 +30,18 @@ def get_revenue_autopsy():
 @router.get("/forecast")
 def get_forecast(horizon_days: int = Query(90)):
     state = get_state()
-    if state.get('features_df') is None:
+    if state.get('features_df') is None or state.get('profiles') is None or state.get('labels') is None:
         raise HTTPException(status_code=404, detail="No data available. Run the pipeline first.")
         
     try:
         forecaster = RevenueForecaster()
-        results = forecaster.forecast(state['features_df'], horizon_days) if hasattr(forecaster, 'forecast') else {}
+        results = forecaster.forecast(
+            features_df=state['features_df'],
+            scores_df=state.get('scores_df'),
+            profiles=state.get('profiles', []),
+            labels=state['labels'],
+            horizon_days=horizon_days
+        )
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -39,12 +49,16 @@ def get_forecast(horizon_days: int = Query(90)):
 @router.get("/cohorts")
 def get_cohorts():
     state = get_state()
-    if state.get('features_df') is None:
+    if state.get('features_df') is None or state.get('scores_df') is None or state.get('labels') is None:
         raise HTTPException(status_code=404, detail="No data available. Run the pipeline first.")
         
     try:
         cohort_engine = CohortEngine()
-        results = cohort_engine.analyze_cohorts(state['features_df']) if hasattr(cohort_engine, 'analyze_cohorts') else {}
+        results = cohort_engine.analyze_cohorts(
+            features_df=state['features_df'],
+            scores_df=state['scores_df'],
+            labels=state['labels']
+        )
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -52,12 +66,16 @@ def get_cohorts():
 @router.get("/anomalies")
 def get_anomalies():
     state = get_state()
-    if state.get('features_df') is None:
+    if state.get('features_df') is None or state.get('scores_df') is None or state.get('labels') is None:
         raise HTTPException(status_code=404, detail="No data available. Run the pipeline first.")
         
     try:
         radar = AnomalyRadar()
-        results = radar.detect_anomalies(state['features_df']) if hasattr(radar, 'detect_anomalies') else {}
+        results = radar.detect_anomalies(
+            features_df=state['features_df'],
+            scores_df=state['scores_df'],
+            labels=state['labels']
+        )
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -72,12 +90,17 @@ def get_alerts():
 @router.get("/rescue-queue")
 def get_rescue_queue():
     state = get_state()
-    if state.get('features_df') is None:
+    if state.get('features_df') is None or state.get('scores_df') is None or state.get('labels') is None:
         raise HTTPException(status_code=404, detail="No data available. Run the pipeline first.")
         
     try:
         rescue = RescueQueue()
-        results = rescue.build_queue(state['features_df'], state.get('scores_df')) if hasattr(rescue, 'build_queue') else {}
+        results = rescue.build_queue(
+            features_df=state['features_df'],
+            scores_df=state['scores_df'],
+            profiles=state.get('profiles', []),
+            labels=state['labels']
+        )
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -85,12 +108,16 @@ def get_rescue_queue():
 @router.get("/tribes")
 def get_tribes():
     state = get_state()
-    if state.get('features_df') is None:
+    if state.get('features_df') is None or state.get('scores_df') is None or state.get('labels') is None:
         raise HTTPException(status_code=404, detail="No data available. Run the pipeline first.")
         
     try:
         mapper = TribeMapper()
-        results = mapper.build_network(state['features_df'], state.get('labels')) if hasattr(mapper, 'build_network') else {}
+        results = mapper.build_network(
+            features_df=state['features_df'],
+            scores_df=state['scores_df'],
+            labels=state['labels']
+        )
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -98,12 +125,16 @@ def get_tribes():
 @router.get("/golden-hours")
 def get_golden_hours():
     state = get_state()
-    if state.get('features_df') is None:
+    if state.get('features_df') is None or state.get('profiles') is None or state.get('labels') is None:
         raise HTTPException(status_code=404, detail="No data available. Run the pipeline first.")
         
     try:
         analyzer = GoldenHourAnalyzer()
-        results = analyzer.analyze(state['features_df']) if hasattr(analyzer, 'analyze') else {}
+        results = analyzer.analyze(
+            features_df=state['features_df'],
+            profiles=state.get('profiles', []),
+            labels=state['labels']
+        )
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

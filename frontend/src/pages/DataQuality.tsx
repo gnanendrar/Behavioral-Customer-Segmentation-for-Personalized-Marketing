@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { AlertCircle, CheckCircle, Database, FileText, ShieldAlert } from 'lucide-react';
+import { CheckCircle, Database, FileText, ShieldAlert } from 'lucide-react';
 import { getDataQuality } from '../services/api';
 import PageHeader from '../components/common/PageHeader';
 import StatCard from '../components/common/StatCard';
+
+const COLORS = ['#3B82F6', '#8B5CF6', '#10B981'];
 
 const DataQuality = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -44,39 +46,66 @@ const DataQuality = () => {
     );
   }
 
-  const score = qualityData.completeness_score || 95;
+  const score = qualityData.completeness_score ?? 95;
   const scoreColor = score >= 90 ? 'text-emerald-500' : score >= 70 ? 'text-amber-500' : 'text-red-500';
 
+  const numericCount = qualityData.types?.numeric ?? (qualityData.numerical_columns?.length || 0);
+  const catCount = qualityData.types?.categorical ?? (qualityData.categorical_columns?.length || 0);
+  const dateCount = qualityData.types?.datetime ?? (qualityData.date_columns?.length || 0);
+
   const typeData = [
-    { name: 'Numeric', count: qualityData.types?.numeric || 0 },
-    { name: 'Categorical', count: qualityData.types?.categorical || 0 },
-    { name: 'Date/Time', count: qualityData.types?.datetime || 0 }
+    { name: 'Numeric', count: numericCount },
+    { name: 'Categorical', count: catCount },
+    { name: 'Date/Time', count: dateCount }
   ];
 
-  const COLORS = ['#3B82F6', '#8B5CF6', '#10B981'];
+  // Build missing details list
+  const missingEntries: { col: string; count: number; percentage: number }[] = [];
+  if (qualityData.missing_details) {
+    Object.entries(qualityData.missing_details).forEach(([col, d]: [string, any]) => {
+      missingEntries.push({ col, count: d.count ?? 0, percentage: d.percentage ?? 0 });
+    });
+  } else if (qualityData.missing_values_per_column || qualityData.missing_percentage) {
+    const counts = qualityData.missing_values_per_column || qualityData.missing_values || {};
+    const pcts = qualityData.missing_percentage || {};
+    Object.keys(counts).forEach((col) => {
+      missingEntries.push({
+        col,
+        count: counts[col] ?? 0,
+        percentage: pcts[col] ?? 0,
+      });
+    });
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <PageHeader 
-        title="Data Quality Report" 
-        subtitle="Assess the health, completeness, and structure of your ingested data"
+        title="Data Quality Assessment" 
+        subtitle="Health checks, completeness, and distributions of your dataset"
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center">
-          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Overall Score</h3>
-          <div className="relative w-32 h-32 flex items-center justify-center rounded-full border-8 border-slate-100">
-            <span className={`text-4xl font-bold ${scoreColor}`}>{score}%</span>
-          </div>
-          <p className="text-sm text-slate-500 mt-4 text-center">Dataset Health & Completeness</p>
-        </div>
-
-        <div className="md:col-span-3 grid grid-cols-2 gap-4">
-          <StatCard title="Total Rows" value={qualityData.total_rows?.toLocaleString() || '0'} icon={<Database />} />
-          <StatCard title="Total Columns" value={qualityData.total_columns?.toLocaleString() || '0'} icon={<FileText />} />
-          <StatCard title="Duplicate Rows" value={qualityData.duplicates?.toLocaleString() || '0'} icon={<AlertCircle />} />
-          <StatCard title="Missing Values" value={qualityData.total_missing?.toLocaleString() || '0'} icon={<AlertCircle />} />
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard 
+          title="Completeness Score" 
+          value={`${score}%`} 
+          color={scoreColor}
+          icon={<ShieldAlert className={scoreColor} />} 
+        />
+        <StatCard 
+          title="Total Rows" 
+          value={(qualityData.total_rows || 0).toLocaleString()} 
+          icon={<Database />} 
+        />
+        <StatCard 
+          title="Total Columns" 
+          value={qualityData.total_columns || 0} 
+          icon={<FileText />} 
+        />
+        <StatCard 
+          title="Duplicate Rows" 
+          value={qualityData.duplicate_rows ?? 0} 
+          icon={<CheckCircle className={qualityData.duplicate_rows ? 'text-amber-500' : 'text-emerald-500'} />} 
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -90,7 +119,7 @@ const DataQuality = () => {
                 <YAxis />
                 <Tooltip />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                  {typeData.map((entry, index) => (
+                  {typeData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Bar>
@@ -111,20 +140,20 @@ const DataQuality = () => {
                 </tr>
               </thead>
               <tbody>
-                {qualityData.missing_details && Object.entries(qualityData.missing_details).length > 0 ? (
-                  Object.entries(qualityData.missing_details).map(([col, data]: [string, any], idx) => (
+                {missingEntries.length > 0 ? (
+                  missingEntries.map((item, idx) => (
                     <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-900">{col}</td>
-                      <td className="px-4 py-3 text-right">{data.count}</td>
+                      <td className="px-4 py-3 font-medium text-slate-900">{item.col}</td>
+                      <td className="px-4 py-3 text-right">{item.count}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <div className="w-full bg-slate-200 rounded-full h-2">
                             <div 
-                              className={`h-2 rounded-full ${data.percentage > 20 ? 'bg-red-500' : data.percentage > 5 ? 'bg-amber-500' : 'bg-emerald-500'}`} 
-                              style={{ width: `${Math.min(data.percentage, 100)}%` }}
+                              className={`h-2 rounded-full ${item.percentage > 20 ? 'bg-red-500' : item.percentage > 5 ? 'bg-amber-500' : 'bg-emerald-500'}`} 
+                              style={{ width: `${Math.min(item.percentage, 100)}%` }}
                             ></div>
                           </div>
-                          <span className="w-10 text-right">{data.percentage.toFixed(1)}%</span>
+                          <span className="w-10 text-right">{Number(item.percentage).toFixed(1)}%</span>
                         </div>
                       </td>
                     </tr>

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import type { ChangeEvent } from 'react';
 import { Play, TrendingUp, TrendingDown, AlertTriangle, Lightbulb, Target } from 'lucide-react';
 import { getSegments, runSimulation } from '../services/api';
-import { PageHeader } from '../components/common/PageHeader';
+import PageHeader from '../components/common/PageHeader';
 import { motion } from 'framer-motion';
 
 const ACTIONS = [
@@ -24,8 +25,11 @@ export default function WhatIfSimulator() {
     const fetchSegments = async () => {
       try {
         const data = await getSegments();
-        setSegments(data);
-        if (data.length > 0) setSelectedSegmentId(data[0].segment_id || data[0].id);
+        const segList = Array.isArray(data) ? data : (data?.segments || []);
+        setSegments(segList);
+        if (segList.length > 0) {
+          setSelectedSegmentId(String(segList[0].segment_id ?? segList[0].id ?? ''));
+        }
       } catch (err) {
         console.error("Failed to load segments", err);
       }
@@ -33,7 +37,7 @@ export default function WhatIfSimulator() {
     fetchSegments();
   }, []);
 
-  const handleActionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleActionChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const actionId = e.target.value;
     setSelectedActionId(actionId);
     const action = ACTIONS.find(a => a.id === actionId);
@@ -44,7 +48,7 @@ export default function WhatIfSimulator() {
     if (!selectedSegmentId) return;
     setLoading(true);
     try {
-      const data = await runSimulation(selectedSegmentId, selectedActionId, intensity);
+      const data = await runSimulation(Number(selectedSegmentId), selectedActionId, intensity);
       setResult(data);
     } catch (err) {
       console.error("Simulation failed", err);
@@ -55,6 +59,24 @@ export default function WhatIfSimulator() {
   };
 
   const selectedActionDef = ACTIONS.find(a => a.id === selectedActionId);
+
+  // Normalize results whether from mock or backend simulator
+  const currentRev = result?.revenue?.current ?? result?.revenue_impact?.current_revenue ?? 0;
+  const projectedRev = result?.revenue?.projected ?? result?.revenue_impact?.projected_revenue ?? 0;
+  const revPctChange = result?.revenue?.pct_change ?? result?.revenue_impact?.revenue_change_pct ?? 0;
+  const confidenceScore = result?.confidence_score ?? Math.round((result?.confidence ?? 0.8) * (result?.confidence <= 1 ? 100 : 1));
+
+  let metricsList: Array<{ name: string; current: number; projected: number; pct_change: number }> = [];
+  if (Array.isArray(result?.metrics)) {
+    metricsList = result.metrics;
+  } else if (result?.projected_changes && typeof result.projected_changes === 'object') {
+    metricsList = Object.entries(result.projected_changes).map(([key, val]: [string, any]) => ({
+      name: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      current: val.current ?? 0,
+      projected: val.projected ?? 0,
+      pct_change: val.change_pct ?? 0,
+    }));
+  }
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -74,7 +96,7 @@ export default function WhatIfSimulator() {
               className="w-full border-gray-300 rounded-lg shadow-sm p-2.5 border bg-white focus:ring-indigo-500 focus:border-indigo-500"
             >
               {segments.map((s, i) => (
-                <option key={i} value={s.segment_id || s.id}>{s.segment_name}</option>
+                <option key={i} value={s.segment_id ?? s.id}>{s.segment_name}</option>
               ))}
             </select>
           </div>
@@ -92,7 +114,7 @@ export default function WhatIfSimulator() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Intensity ({intensity}{selectedActionDef?.unit})
+              Intensity ({intensity} {selectedActionDef?.unit})
             </label>
             <input
               type="range"
@@ -125,7 +147,7 @@ export default function WhatIfSimulator() {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-yellow-700 font-medium">
-                  DISCLAIMER: These are ESTIMATES based on historical data. Not guaranteed outcomes. 
+                  DISCLAIMER: {result.disclaimer || 'These are ESTIMATES based on historical data. Not guaranteed outcomes.'}{' '}
                   Projection horizon: <span className="font-bold">{result.time_horizon || '30 days'}</span>.
                 </p>
               </div>
@@ -137,28 +159,28 @@ export default function WhatIfSimulator() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-700">Projected Revenue Impact</h3>
                 <div className="flex items-end gap-4 mt-2">
-                  <div className="text-4xl font-black text-gray-900">${result.revenue?.projected?.toLocaleString() || '0'}</div>
-                  <div className={`flex items-center font-bold pb-1 ${result.revenue?.pct_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {result.revenue?.pct_change >= 0 ? <TrendingUp className="w-5 h-5 mr-1" /> : <TrendingDown className="w-5 h-5 mr-1" />}
-                    {result.revenue?.pct_change > 0 ? '+' : ''}{result.revenue?.pct_change}%
+                  <div className="text-4xl font-black text-gray-900">${projectedRev.toLocaleString()}</div>
+                  <div className={`flex items-center font-bold pb-1 ${revPctChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {revPctChange >= 0 ? <TrendingUp className="w-5 h-5 mr-1" /> : <TrendingDown className="w-5 h-5 mr-1" />}
+                    {revPctChange > 0 ? '+' : ''}{revPctChange}%
                   </div>
                 </div>
                 <div className="text-sm text-gray-500 mt-1">
-                  Current: ${result.revenue?.current?.toLocaleString() || '0'}
+                  Current: ${currentRev.toLocaleString()}
                 </div>
               </div>
               <div className="text-right">
                 <div className="text-sm text-gray-500 mb-1">Confidence Score</div>
                 <div className="flex items-center gap-2 justify-end">
                   <div className="w-32 bg-gray-200 rounded-full h-2.5">
-                    <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${result.confidence_score || 0}%` }}></div>
+                    <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${confidenceScore}%` }}></div>
                   </div>
-                  <span className="font-bold text-gray-700">{result.confidence_score || 0}%</span>
+                  <span className="font-bold text-gray-700">{confidenceScore}%</span>
                 </div>
               </div>
             </div>
 
-            {(result.metrics || []).map((metric: any, idx: number) => {
+            {metricsList.map((metric, idx: number) => {
               const isPositive = metric.pct_change >= 0;
               const isInverse = metric.name.toLowerCase().includes('churn') || metric.name.toLowerCase().includes('unsubscribe');
               const isGood = isInverse ? !isPositive : isPositive;
@@ -177,7 +199,7 @@ export default function WhatIfSimulator() {
                     </div>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
 

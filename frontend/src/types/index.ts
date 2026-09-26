@@ -18,7 +18,24 @@ export interface SegmentProfile {
   feature_means: Record<string, number>;
   feature_zscores: Record<string, number>;
   behavioral_summary: string;
+  // Aliases / compatibility fields:
+  id?: number;
+  name?: string;
+  size?: number;
+  cluster_id?: number;
+  metrics?: {
+    monetary_value?: number;
+    engagement_score?: number;
+    loyalty_index?: number;
+    churn_probability?: number;
+    frequency?: number;
+    [key: string]: any;
+  };
+  characteristics?: string[];
+  marketing_action?: string;
 }
+
+export type Segment = SegmentProfile;
 
 // Customer scores
 export interface CustomerScores {
@@ -31,11 +48,13 @@ export interface CustomerScores {
   churn_risk_score: number;
   product_affinity_score: number;
   behavioral_customer_score: number;
+  [key: string]: any;
 }
 
 // Customer 360 profile
 export interface Customer360 {
   customer_id: string;
+  id?: string;
   segment_id: number;
   segment_name: string;
   scores: CustomerScores;
@@ -43,7 +62,10 @@ export interface Customer360 {
   dna: CustomerDNA;
   behavioral_changes: BehavioralChange[];
   score_explanations: Record<string, ScoreExplanation>;
+  [key: string]: any;
 }
+
+export type Customer = Customer360 & RescueQueueItem;
 
 // Customer DNA
 export interface CustomerDNA {
@@ -84,6 +106,7 @@ export interface MarketingAction {
   segment_name: string;
   strategy: string;
   channel: string[];
+  channels?: string[];
   offer: string;
   frequency: string;
   objective: string;
@@ -185,6 +208,11 @@ export interface MicroSegment {
 export interface RevenueAutopsy {
   total_revenue: number;
   segment_contributions: { segment_id: number; segment_name: string; revenue: number; percentage: number; }[];
+  segments: { segment_id: number; segment_name: string; revenue: number; percentage: number; }[];
+  gini_coefficient?: number;
+  revenue_concentration?: number;
+  top_segment?: string;
+  bottom_segment?: string;
   narrative: string;
 }
 
@@ -192,10 +220,12 @@ export interface RevenueAutopsy {
 export interface RevenueForecast {
   disclaimer: string;
   horizon_days: number;
+  horizon_label?: string;
   total_current_revenue: number;
   total_projected_revenue: number;
   total_growth_pct: number;
   segment_forecasts: { segment_id: number; segment_name: string; projected_revenue: number; growth_rate_pct: number; growth_label: string; }[];
+  segments: { segment_id: number; segment_name: string; projected_revenue: number; growth_rate_pct?: number; growth_label?: string; }[];
 }
 
 // Cohort
@@ -205,13 +235,27 @@ export interface Cohort {
   avg_value_score: number;
   avg_engagement_score: number;
   avg_churn_risk: number;
+  avg_engagement?: number;
   segment_distribution: Record<string, number>;
+}
+
+export type CohortData = Cohort;
+
+// Transition Info
+export interface TransitionInfo {
+  from_segment: string | number;
+  to_segment: string | number;
+  count: number;
+  estimated_count?: number;
+  direction: 'upgrade' | 'downgrade';
 }
 
 // Rescue queue item
 export interface RescueQueueItem {
+  id?: string;
   customer_id: string;
   rescue_priority_score: number;
+  rescue_priority?: number;
   value_score: number;
   churn_risk_score: number;
   revenue_at_risk: number;
@@ -227,18 +271,23 @@ export interface CopilotResponse {
   data_references: string[];
   confidence: string;
   suggested_followups: string[];
+  data?: any;
 }
 
 // Model evaluation
 export interface ModelEvaluation {
   algorithm: string;
   n_clusters: number;
+  k?: number;
   silhouette_score: number;
   davies_bouldin_score: number;
   calinski_harabasz_score: number;
   feature_count: number;
   dataset_size: number;
+  is_best?: boolean;
 }
+
+export type ModelMetrics = ModelEvaluation;
 
 // App status
 export interface AppStatus {
