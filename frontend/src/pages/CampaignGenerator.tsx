@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Wand2, Copy, Check, Mail, Smartphone, Bell, Target, 
-  Calendar, DollarSign, Activity 
+  Calendar 
 } from 'lucide-react';
 import { getSegments, generateCampaign } from '../services/api';
-import { PageHeader } from '../components/common/PageHeader';
+import PageHeader from '../components/common/PageHeader';
 
 export default function CampaignGenerator() {
   const [searchParams] = useSearchParams();
@@ -23,22 +23,23 @@ export default function CampaignGenerator() {
     const fetchSegments = async () => {
       try {
         const data = await getSegments();
-        setSegments(data);
-        if (!selectedSegmentId && data.length > 0) {
-          setSelectedSegmentId(data[0].segment_id || data[0].id);
+        const list = Array.isArray(data) ? data : (data?.segments || []);
+        setSegments(list);
+        if (!selectedSegmentId && list.length > 0) {
+          setSelectedSegmentId(String(list[0].segment_id ?? list[0].id ?? ''));
         }
       } catch (err) {
         console.error("Failed to load segments", err);
       }
     };
     fetchSegments();
-  }, []);
+  }, [selectedSegmentId]);
 
   const handleGenerate = async () => {
     if (!selectedSegmentId) return;
     setLoading(true);
     try {
-      const data = await generateCampaign(selectedSegmentId, instructions);
+      const data = await generateCampaign(Number(selectedSegmentId), instructions);
       setCampaign(data);
       setCopiedStates({});
     } catch (err) {
@@ -55,13 +56,13 @@ export default function CampaignGenerator() {
     setTimeout(() => setCopiedStates(prev => ({ ...prev, [key]: false })), 2000);
   };
 
-  const selectedSegment = segments.find(s => (s.segment_id || s.id) === selectedSegmentId);
+  const selectedSegment = segments.find(s => String(s.segment_id ?? s.id) === String(selectedSegmentId));
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <PageHeader 
         title="AI Campaign Generator" 
-        description="Auto-generate hyper-personalized marketing copy and strategy for your segments." 
+        subtitle="Auto-generate hyper-personalized marketing copy and strategy for your segments." 
       />
 
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
@@ -75,13 +76,13 @@ export default function CampaignGenerator() {
             >
               <option value="" disabled>Select a segment</option>
               {segments.map((s, i) => (
-                <option key={i} value={s.segment_id || s.id}>{s.segment_name}</option>
+                <option key={i} value={s.segment_id ?? s.id}>{s.segment_name || `Segment ${s.segment_id ?? i}`}</option>
               ))}
             </select>
             {selectedSegment && (
               <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100 text-sm text-gray-600">
-                <span className="font-semibold text-gray-800">Size:</span> {selectedSegment.size} customers<br/>
-                <span className="font-semibold text-gray-800">Key traits:</span> {selectedSegment.description || 'N/A'}
+                <span className="font-semibold text-gray-800">Size:</span> {selectedSegment.customer_count ?? selectedSegment.size ?? 0} customers<br/>
+                <span className="font-semibold text-gray-800">Key traits:</span> {selectedSegment.key_characteristics?.join(', ') || selectedSegment.description || 'N/A'}
               </div>
             )}
           </div>
@@ -138,72 +139,76 @@ export default function CampaignGenerator() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Email Asset */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                  <Mail className="w-5 h-5 text-gray-500" /> Email Copy
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-indigo-600" /> Email Copy
                 </h3>
                 <button 
-                  onClick={() => copyToClipboard(`Subject: ${campaign.email?.subject}\n\n${campaign.email?.body}`, 'email')}
-                  className="p-1.5 hover:bg-gray-100 rounded text-gray-500 transition"
-                  title="Copy email"
+                  onClick={() => copyToClipboard(`Subject: ${campaign.subject_line}\n\n${campaign.email_body}`, 'email')}
+                  className="flex items-center gap-1 text-sm text-gray-500 hover:text-indigo-600"
                 >
                   {copiedStates['email'] ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                  {copiedStates['email'] ? 'Copied' : 'Copy'}
                 </button>
               </div>
-              
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <div className="bg-gray-50 p-3 border-b border-gray-200 text-sm">
-                  <span className="text-gray-500 font-medium">Subject:</span> <span className="text-gray-900 font-bold">{campaign.email?.subject}</span>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 flex-1 flex flex-col gap-3">
+                <div>
+                  <span className="text-xs font-semibold text-gray-500 uppercase">Subject Line</span>
+                  <p className="text-sm font-medium text-gray-900 mt-1">{campaign.subject_line}</p>
                 </div>
-                <div className="p-4 text-sm text-gray-700 whitespace-pre-wrap bg-white h-64 overflow-y-auto font-sans">
-                  {campaign.email?.body}
+                <div className="border-t border-gray-200 pt-3">
+                  <span className="text-xs font-semibold text-gray-500 uppercase">Body</span>
+                  <div className="text-sm text-gray-700 mt-1 whitespace-pre-line leading-relaxed">
+                    {campaign.email_body}
+                  </div>
                 </div>
+                {campaign.call_to_action && (
+                  <div className="border-t border-gray-200 pt-3">
+                    <span className="text-xs font-semibold text-gray-500 uppercase">Call to Action</span>
+                    <p className="text-sm font-semibold text-indigo-600 mt-1">{campaign.call_to_action}</p>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="space-y-6">
-              {/* SMS Asset */}
+            {/* Mobile Push & SMS */}
+            <div className="space-y-6 flex flex-col">
+              {/* SMS */}
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                    <Smartphone className="w-5 h-5 text-gray-500" /> SMS Copy
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <Smartphone className="w-5 h-5 text-emerald-600" /> SMS Message
                   </h3>
                   <button 
-                    onClick={() => copyToClipboard(campaign.sms?.copy, 'sms')}
-                    className="p-1.5 hover:bg-gray-100 rounded text-gray-500 transition"
+                    onClick={() => copyToClipboard(campaign.sms_copy, 'sms')}
+                    className="flex items-center gap-1 text-sm text-gray-500 hover:text-indigo-600"
                   >
                     {copiedStates['sms'] ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                    {copiedStates['sms'] ? 'Copied' : 'Copy'}
                   </button>
                 </div>
-                <div className="relative mx-auto w-64 h-32 border-[4px] border-gray-800 rounded-2xl p-4 bg-gray-50 overflow-hidden">
-                  <div className="bg-blue-500 text-white p-2.5 rounded-2xl rounded-br-sm text-xs w-48 float-right shadow-sm relative z-10">
-                    {campaign.sms?.copy}
-                  </div>
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 text-sm text-gray-700">
+                  {campaign.sms_copy}
                 </div>
               </div>
 
-              {/* Push Asset */}
+              {/* Push */}
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                    <Bell className="w-5 h-5 text-gray-500" /> Push Notification
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <Bell className="w-5 h-5 text-amber-500" /> Push Notification
                   </h3>
                   <button 
-                    onClick={() => copyToClipboard(`${campaign.push?.title}\n${campaign.push?.body}`, 'push')}
-                    className="p-1.5 hover:bg-gray-100 rounded text-gray-500 transition"
+                    onClick={() => copyToClipboard(campaign.push_notification, 'push')}
+                    className="flex items-center gap-1 text-sm text-gray-500 hover:text-indigo-600"
                   >
                     {copiedStates['push'] ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                    {copiedStates['push'] ? 'Copied' : 'Copy'}
                   </button>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-md w-full max-w-sm mx-auto flex gap-3">
-                  <div className="w-8 h-8 rounded bg-indigo-100 flex items-center justify-center shrink-0">
-                    <Activity className="w-4 h-4 text-indigo-600" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm text-gray-900">{campaign.push?.title}</div>
-                    <div className="text-xs text-gray-600 mt-0.5">{campaign.push?.body}</div>
-                  </div>
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 text-sm text-gray-700">
+                  {campaign.push_notification}
                 </div>
               </div>
             </div>

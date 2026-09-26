@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer 
@@ -6,7 +6,6 @@ import {
 import { motion } from 'framer-motion';
 import { User, TrendingUp, TrendingDown, Activity, AlertCircle } from 'lucide-react';
 import { getCustomer360 } from '../services/api';
-import { PageHeader } from '../components/common/PageHeader';
 
 export default function Customer360() {
   const { id } = useParams<{ id: string }>();

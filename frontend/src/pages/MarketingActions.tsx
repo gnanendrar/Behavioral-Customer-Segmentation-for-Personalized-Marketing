@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Smartphone, Bell, Target, Clock, Zap, ArrowRight } from 'lucide-react';
 import { getMarketingActions, getSegments, getMarketingFatigue, getGoldenHours } from '../services/api';
-import { PageHeader } from '../components/common/PageHeader';
+import PageHeader from '../components/common/PageHeader';
 
 export default function MarketingActions() {
   const navigate = useNavigate();
@@ -23,8 +23,8 @@ export default function MarketingActions() {
           getMarketingFatigue(),
           getGoldenHours()
         ]);
-        setActions(actionsData);
-        setSegments(segData);
+        setActions(Array.isArray(actionsData) ? actionsData : []);
+        setSegments(Array.isArray(segData) ? segData : (segData?.segments || []));
         setFatigue(fatigueData);
         setGoldenHours(hoursData);
       } catch (error) {
@@ -38,7 +38,7 @@ export default function MarketingActions() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
@@ -66,72 +66,80 @@ export default function MarketingActions() {
     <div className="p-6 space-y-8">
       <PageHeader 
         title="Marketing Actions" 
-        description="Recommended strategies and campaigns per segment based on behavioral data." 
+        subtitle="Recommended strategies and campaigns per segment based on behavioral data." 
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {actions.map((action, idx) => (
-          <motion.div 
-            key={idx}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: idx * 0.1 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full"
-          >
-            <div className="p-5 border-b border-gray-100 flex justify-between items-start">
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">{action.segment_name}</h3>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded border border-indigo-100">
-                    {action.strategy}
-                  </span>
-                  <span className={`px-2.5 py-1 text-xs font-medium rounded border ${getPriorityColor(action.priority)}`}>
-                    {action.priority} Priority
-                  </span>
+        {actions.map((action, idx) => {
+          const segInfo = segments.find(s => s.segment_id === action.segment_id);
+          const channelList = Array.isArray(action.channels) ? action.channels : (Array.isArray(action.channel) ? action.channel : []);
+
+          return (
+            <motion.div 
+              key={idx}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: idx * 0.1 }}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full"
+            >
+              <div className="p-5 border-b border-gray-100 flex justify-between items-start">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">{action.segment_name}</h3>
+                  {segInfo && (
+                    <span className="text-xs text-gray-500 font-medium">({segInfo.customer_count ?? 0} customers)</span>
+                  )}
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded border border-indigo-100">
+                      {action.strategy}
+                    </span>
+                    <span className={`px-2.5 py-1 text-xs font-medium rounded border ${getPriorityColor(action.priority)}`}>
+                      {action.priority} Priority
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </div>
-            
-            <div className="p-5 flex-1 flex flex-col gap-4">
-              <div>
-                <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Objective</div>
-                <p className="text-sm text-gray-800">{action.objective}</p>
               </div>
               
-              <div>
-                <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Channels</div>
-                <div className="flex gap-2">
-                  {(action.channels || []).map((ch: string, i: number) => (
-                    <div key={i} className="flex items-center gap-1.5 px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                      {getChannelIcon(ch)} {ch}
-                    </div>
-                  ))}
+              <div className="p-5 flex-1 flex flex-col gap-4">
+                <div>
+                  <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Objective</div>
+                  <p className="text-sm text-gray-800">{action.objective}</p>
+                </div>
+                
+                <div>
+                  <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Channels</div>
+                  <div className="flex flex-wrap gap-2">
+                    {channelList.map((ch: string, i: number) => (
+                      <div key={i} className="flex items-center gap-1.5 px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                        {getChannelIcon(ch)} {ch}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Offer & Frequency</div>
+                  <div className="text-sm bg-gray-50 p-2 rounded text-gray-700 border border-gray-100">
+                    <span className="font-medium">{action.offer}</span> — {action.frequency}
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-4">
+                  <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Rationale</div>
+                  <p className="text-sm text-gray-600 italic">"{action.rationale}"</p>
                 </div>
               </div>
 
-              <div>
-                <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Offer & Frequency</div>
-                <div className="text-sm bg-gray-50 p-2 rounded text-gray-700 border border-gray-100">
-                  <span className="font-medium">{action.offer}</span> — {action.frequency}
-                </div>
+              <div className="p-4 bg-gray-50 border-t border-gray-100">
+                <button 
+                  onClick={() => navigate(`/campaign?segment=${action.segment_id}`)}
+                  className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                >
+                  Generate Campaign <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
-
-              <div className="mt-auto pt-4">
-                <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Rationale</div>
-                <p className="text-sm text-gray-600 italic">"{action.rationale}"</p>
-              </div>
-            </div>
-
-            <div className="p-4 bg-gray-50 border-t border-gray-100">
-              <button 
-                onClick={() => navigate(`/campaign?segment=${action.segment_id}`)}
-                className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
-              >
-                Generate Campaign <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -151,7 +159,7 @@ export default function MarketingActions() {
                       data.risk === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 
                       'bg-green-100 text-green-800'
                     }`}>
-                      {data.risk} Risk ({data.index}/100)
+                      {data.risk || 'Normal'} Risk ({data.index || 0}/100)
                     </span>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-2">
@@ -160,8 +168,8 @@ export default function MarketingActions() {
                         data.risk === 'High' ? 'bg-red-500' : 
                         data.risk === 'Medium' ? 'bg-yellow-500' : 
                         'bg-green-500'
-                      }`}
-                      style={{ width: `${data.index}%` }}
+                      }`} 
+                      style={{ width: `${Math.min(100, data.index || 0)}%` }}
                     ></div>
                   </div>
                 </div>
@@ -177,13 +185,20 @@ export default function MarketingActions() {
               Golden Hours
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {Object.entries(goldenHours).map(([seg, data]: [string, any], idx) => (
-                <div key={idx} className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-                  <div className="text-sm font-medium text-gray-700 mb-2">{seg}</div>
-                  <div className="text-xl font-bold text-blue-900">{data.best_time}</div>
-                  <div className="text-xs text-blue-700 mt-1">{data.best_day}</div>
-                </div>
-              ))}
+              {(Array.isArray(goldenHours) ? goldenHours : Object.entries(goldenHours)).map((item: any, idx: number) => {
+                const seg = Array.isArray(goldenHours) ? item.segment_name : item[0];
+                const data = Array.isArray(goldenHours) ? item : item[1];
+                const bestTime = data.best_hours || data.best_time || '10:00 AM - 12:00 PM';
+                const bestDay = Array.isArray(data.best_days) ? data.best_days.join(', ') : (data.best_days || data.best_day || 'Wednesday');
+
+                return (
+                  <div key={idx} className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <div className="text-sm font-medium text-gray-700 mb-2">{seg}</div>
+                    <div className="text-xl font-bold text-blue-900">{bestTime}</div>
+                    <div className="text-xs text-blue-700 mt-1">{bestDay}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

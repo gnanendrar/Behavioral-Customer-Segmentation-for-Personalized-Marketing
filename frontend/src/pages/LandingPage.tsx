@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  Users, BarChart2, Zap, Brain, Sliders, TrendingUp, 
+  Users, Zap, Brain, Sliders, TrendingUp, 
   ArrowRight, Loader2, Play, Database
 } from 'lucide-react';
 import { generateSyntheticData, runAnalysis } from '../services/api';

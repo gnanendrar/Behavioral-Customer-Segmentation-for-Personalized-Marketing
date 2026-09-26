@@ -8,6 +8,12 @@ interface AppState {
   notificationCount: number;
   darkMode: boolean;
   toggleDarkMode: () => void;
+  lastUpdated: string | null;
+  setLastUpdated: (date: string) => void;
+  customers: any[];
+  setCustomers: (customers: any[]) => void;
+  segments: any[];
+  setSegments: (segments: any[]) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -18,4 +24,12 @@ export const useAppStore = create<AppState>((set) => ({
   notificationCount: 3,
   darkMode: false,
   toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
+  lastUpdated: null,
+  setLastUpdated: (date) => set({ lastUpdated: date }),
+  customers: [],
+  setCustomers: (customers) => set({ customers }),
+  segments: [],
+  setSegments: (segments) => set({ segments }),
 }));
+
+export default useAppStore;

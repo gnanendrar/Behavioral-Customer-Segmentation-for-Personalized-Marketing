@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { motion } from 'framer-motion';
@@ -94,6 +94,7 @@ const DataUpload = () => {
             </h3>
             <p className="text-sm text-slate-500 mb-4">or click to browse from your computer</p>
             <div className="text-xs text-slate-400">Supported formats: .csv, .xlsx (Max 50MB)</div>
+            {file && <div className="text-xs text-indigo-600 font-medium mt-2">Selected: {file.name}</div>}
           </div>
 
           {(uploadStatus === 'success' || uploadStatus === 'error' || analysisStatus !== 'idle') && (
