@@ -57,7 +57,8 @@ def generate_campaign(req: CampaignRequest):
         
     try:
         generator = CampaignGenerator()
-        campaign = generator.generate_campaign(segment_profile, req.custom_instructions)
+        action = next((a for a in (state.get('marketing_actions') or []) if a.get('segment_id') == req.segment_id), {})
+        campaign = generator.generate_campaign(segment_profile, action, req.custom_instructions or '')
         return campaign
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

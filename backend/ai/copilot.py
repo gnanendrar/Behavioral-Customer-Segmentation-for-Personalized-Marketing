@@ -101,12 +101,17 @@ User Question: {question}
         refs = []
         followups = []
         
-        if 'churn' in question_lower or 'leaving' in question_lower:
-            high_churn = [s for s in segments if str(s.get('churn_risk', '')).lower() in ['high', 'critical']]
+        if any(w in question_lower for w in ('churn', 'leaving', 'win-back', 'win back', 'winback', 'retain', 'retention', 'dormant', 'inactive', 'lapsed')):
+            high_churn = [s for s in segments if s.get('churn_risk_value', 0) >= 60]
+            # prioritise by revenue at stake, so a win-back budget goes where it matters most
+            high_churn.sort(key=lambda s: s.get('revenue', 0.0), reverse=True)
             if high_churn:
                 names = [s.get('name', 'Unknown') for s in high_churn]
-                answer = f"The following segments have high churn risk: {', '.join(names)}. "
-                answer += "Consider launching retention campaigns targeting these users immediately."
+                top = high_churn[0]
+                answer = (f"Segments with high churn risk (60+/100): {', '.join(names)}. "
+                          f"Start with '{top.get('name')}' — {top.get('customer_count', 0)} customers, "
+                          f"churn risk {top.get('churn_risk')}, ${top.get('revenue', 0.0):,.0f} in historical revenue at stake. "
+                          "Use a personalised win-back offer rather than a blanket discount.")
                 refs.extend(names)
                 followups = ["What is the total revenue at risk?", "How can we retain the high-churn segments?"]
             else:

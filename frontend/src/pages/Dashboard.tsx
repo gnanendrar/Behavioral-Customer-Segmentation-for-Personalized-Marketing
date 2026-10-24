@@ -1,318 +1,286 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  BarChart, Bar, PieChart, Pie, Cell, RadarChart, Radar, PolarGrid, PolarAngleAxis,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
-} from 'recharts';
-import { 
-  Users, DollarSign, AlertTriangle, Target, 
-  Award, ArrowRight, BarChart3 
-} from 'lucide-react';
-import { getAppStatus, getSegments, getAlerts } from '../services/api';
-import PageHeader from '../components/common/PageHeader';
-import StatCard from '../components/common/StatCard';
-import { TruncatedYAxisTick, ModernChartTooltip } from '../components/common/ChartHelpers';
-import type { Segment, Alert } from '../types';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AlertTriangle, ChevronRight, Upload, Loader2 } from 'lucide-react';
+import { getAppStatus, getSegments, getAlerts, getMarketingActions, generateSyntheticData, runAnalysis } from '../services/api';
+import { segmentColor, formatMoney } from '../lib/palette';
 
-const COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#EF4444', '#F59E0B', '#10B981', '#06B6D4', '#3B82F6', '#14B8A6', '#A855F7'];
+interface Seg {
+  segment_id: number;
+  segment_name: string;
+  customer_count: number;
+  percentage: number;
+  revenue_contribution: number;
+  revenue?: number;
+  avg_value_score: number;
+  avg_engagement_score: number;
+  avg_churn_risk: number;
+  key_characteristics?: string[];
+}
+interface Alert { severity: string; title: string; message: string; recommended_action?: string; affected_count?: number }
+interface Action { segment_id: number; strategy: string; channel: string[] | string; offer: string; frequency: string; priority?: string }
 
-const Dashboard = () => {
+const pretty = (s?: string) => (s ? s.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase()) : '');
+
+function RiskBar({ value }: { value: number }) {
+  const tone = value >= 65 ? 'bg-red-500' : value >= 40 ? 'bg-amber-500' : 'bg-emerald-500';
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-gray-100" role="presentation">
+        <div className={`h-full rounded-full ${tone}`} style={{ width: `${Math.max(3, Math.min(100, value))}%` }} />
+      </div>
+      <span className="w-7 text-right text-[13.5px] text-gray-700 tnum">{Math.round(value)}</span>
+    </div>
+  );
+}
+
+export default function Dashboard() {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [segments, setSegments] = useState<Segment[]>([]);
+  const [hasAnalysis, setHasAnalysis] = useState(false);
+  const [segments, setSegments] = useState<Seg[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [status, setStatus] = useState<any>(null);
+  const [actions, setActions] = useState<Action[]>([]);
+  const [demoBusy, setDemoBusy] = useState(false);
+  const [hovered, setHovered] = useState<number | null>(null);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      setIsLoading(true);
+    (async () => {
       try {
-        const appStatus = await getAppStatus();
-        setStatus(appStatus);
-
-        if (appStatus.has_analysis) {
-          const [segmentsData, alertsData] = await Promise.all([
-            getSegments(),
-            getAlerts()
-          ]);
-          const segList = Array.isArray(segmentsData) ? segmentsData : (segmentsData?.segments || []);
-          const alertList = Array.isArray(alertsData) ? alertsData : (alertsData?.alerts || []);
-          setSegments(segList);
-          setAlerts(alertList);
+        const status = await getAppStatus();
+        setHasAnalysis(status.has_analysis);
+        if (status.has_analysis) {
+          const [s, a, m] = await Promise.all([getSegments(), getAlerts().catch(() => []), getMarketingActions().catch(() => [])]);
+          setSegments((Array.isArray(s) ? s : s?.segments) || []);
+          setAlerts(Array.isArray(a) ? a : a?.alerts || []);
+          setActions(Array.isArray(m) ? m : []);
         }
-      } catch (err: any) {
-        setError(err.message || 'Failed to load dashboard data');
+      } catch (e: any) {
+        setError(e?.message?.includes('Network') ? 'The analysis server is not reachable. Start the backend on port 8000 and reload.' : e?.message || 'Could not load the dashboard.');
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
-    };
-    fetchDashboardData();
+    })();
   }, []);
 
-  if (isLoading) {
+  // Colour follows segment id so a segment keeps its colour on every page.
+  const ordered = useMemo(() => [...segments].sort((a, b) => (b.revenue_contribution ?? 0) - (a.revenue_contribution ?? 0)), [segments]);
+  const totals = useMemo(() => {
+    const customers = segments.reduce((s, x) => s + (x.customer_count || 0), 0);
+    const revenue = segments.reduce((s, x) => s + (x.revenue ?? 0), 0);
+    const atRisk = segments.filter((x) => x.avg_churn_risk >= 65).reduce((s, x) => s + (x.revenue ?? 0), 0);
+    const top2 = ordered.slice(0, 2);
+    return {
+      customers, revenue, atRisk,
+      top2Customers: top2.reduce((s, x) => s + x.percentage, 0),
+      top2Revenue: top2.reduce((s, x) => s + x.revenue_contribution, 0),
+    };
+  }, [segments, ordered]);
+  const actionFor = (id: number) => actions.find((a) => a.segment_id === id);
+
+  const loadDemo = async () => {
+    setDemoBusy(true);
+    try { await generateSyntheticData(); await runAnalysis(); navigate(0); }
+    catch (e: any) { setError(e?.message || 'The demo could not be loaded.'); setDemoBusy(false); }
+  };
+
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="space-y-4" aria-busy="true">
+        <div className="h-9 w-72 animate-pulse rounded-lg bg-gray-200" />
+        <div className="h-28 animate-pulse rounded-2xl bg-gray-100" />
+        <div className="h-72 animate-pulse rounded-2xl bg-gray-100" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-          <p className="font-medium">Error loading dashboard</p>
-          <p className="text-sm">{error}</p>
-        </div>
+      <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-red-800">
+        <p className="font-semibold">The dashboard could not load</p>
+        <p className="mt-1 text-[14px]">{error}</p>
       </div>
     );
   }
 
-  if (!status?.has_analysis) {
+  if (!hasAnalysis) {
     return (
-      <div className="p-6 max-w-4xl mx-auto mt-10">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-10 text-center">
-          <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-6">
-            <BarChart3 className="w-10 h-10 text-indigo-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-3">No Analysis Data Yet</h2>
-          <p className="text-slate-600 mb-8 max-w-lg mx-auto">
-            Upload your customer dataset or generate a synthetic demo dataset to start uncovering behavioral insights.
-          </p>
-          <div className="flex gap-4 justify-center">
-            <button 
-              onClick={() => navigate('/upload')}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-            >
-              Upload Data
-            </button>
-            <button 
-              onClick={() => navigate('/')}
-              className="px-6 py-3 bg-white border border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors"
-            >
-              Generate Demo
-            </button>
-          </div>
+      <div className="mx-auto max-w-xl py-16 text-center">
+        <h2 className="text-[30px] font-bold leading-tight" style={{ fontStretch: '118%', letterSpacing: '-0.025em' }}>
+          No customers analysed yet
+        </h2>
+        <p className="mx-auto mt-3 max-w-[44ch] text-[15.5px] leading-relaxed text-gray-600">
+          Upload a customer file, or load the demo of 1,500 customers to see how segments, scores and actions look.
+        </p>
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+          <button type="button" onClick={loadDemo} disabled={demoBusy}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-[15px] font-semibold text-white hover:bg-indigo-700 disabled:opacity-80">
+            {demoBusy && <Loader2 className="h-4 w-4 animate-spin" />}
+            {demoBusy ? 'Finding segments…' : 'Load the demo data'}
+          </button>
+          <Link to="/upload" className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-5 text-[15px] font-medium text-gray-800 hover:border-gray-400">
+            <Upload className="h-4 w-4" /> Upload a file
+          </Link>
         </div>
       </div>
     );
   }
 
-  // Calculate KPIs
-  const totalCustomers = segments.reduce((sum, s) => sum + (s.customer_count || 0), 0);
-  const totalRevenue = segments.reduce((sum, s) => sum + (s.revenue_contribution || (s.avg_order_value ? s.avg_order_value * s.customer_count : 0)), 0);
-  const avgCustomerValue = totalCustomers > 0 ? totalRevenue / totalCustomers : 0;
-  
-  const pieData = segments.map(s => ({ name: s.segment_name, value: s.customer_count || 0 }));
-  const revenueData = segments.map(s => ({ 
-    name: s.segment_name, 
-    revenue: s.revenue_contribution || (s.avg_order_value ? s.avg_order_value * s.customer_count : 0)
-  })).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
-
-  const radarData = segments.slice(0, 3).map(s => ({
-    name: s.segment_name,
-    Value: s.avg_value_score || 0,
-    Engagement: s.avg_engagement_score || 0,
-    Loyalty: s.avg_loyalty_score || 0,
-    Activity: s.avg_purchase_frequency || 0,
-  }));
-  
-  const radarMetrics = ['Value', 'Engagement', 'Loyalty', 'Activity'];
-  const formattedRadarData = radarMetrics.map(metric => {
-    const row: any = { metric };
-    radarData.forEach(s => {
-      row[s.name] = s[metric as keyof typeof s];
-    });
-    return row;
-  });
+  const highAlerts = alerts.filter((a) => ['critical', 'high'].includes(a.severity));
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <PageHeader 
-        title="Dashboard Overview" 
-        subtitle="High-level view of your customer behavioral landscape"
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Customers" value={totalCustomers.toLocaleString()} icon={<Users />} trend="+12%" trendUp={true} />
-        <StatCard title="Total Revenue" value={`$${(totalRevenue/1000).toFixed(1)}k`} icon={<DollarSign />} trend="+8%" trendUp={true} />
-        <StatCard title="Avg Customer Value" value={`$${avgCustomerValue.toFixed(2)}`} icon={<Award />} />
-        <StatCard title="Segments Identified" value={segments.length.toString()} icon={<Target />} />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Alerts Panel */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:col-span-1 flex flex-col justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-500" /> Key Insights & Alerts
-            </h3>
-            <div className="space-y-3">
-              {alerts.slice(0, 4).map((alert, idx) => (
-                <div key={idx} className={`p-3.5 rounded-xl border-l-4 ${
-                  alert.severity === 'high' ? 'border-red-500 bg-red-50/80' : 
-                  alert.severity === 'medium' ? 'border-amber-500 bg-amber-50/80' : 
-                  'border-blue-500 bg-blue-50/80'
-                }`}>
-                  <p className="font-semibold text-slate-900 text-xs mb-1">{alert.title}</p>
-                  <p className="text-xs text-slate-600 leading-relaxed">{alert.message}</p>
-                </div>
-              ))}
-              {alerts.length === 0 && (
-                <p className="text-slate-500 text-sm">No active alerts.</p>
-              )}
+    <div className="space-y-10">
+      {/* Headline: the finding, not the topic */}
+      <section>
+        <h2 className="max-w-[24ch] text-[30px] font-bold leading-[1.08] text-gray-900 sm:text-[38px]" style={{ fontStretch: '120%', letterSpacing: '-0.03em' }}>
+          {ordered.length >= 2
+            ? `Two segments bring in ${Math.round(totals.top2Revenue)}% of revenue from ${Math.round(totals.top2Customers)}% of customers.`
+            : 'Your customer segments'}
+        </h2>
+        <dl className="mt-7 grid grid-cols-2 divide-gray-200 rounded-2xl border border-gray-200 bg-white sm:grid-cols-4 sm:divide-x">
+          {[
+            { k: 'Customers', v: totals.customers.toLocaleString() },
+            { k: 'Revenue', v: formatMoney(totals.revenue) },
+            { k: 'Average per customer', v: formatMoney(totals.customers ? totals.revenue / totals.customers : 0) },
+            { k: 'Revenue in high-risk segments', v: formatMoney(totals.atRisk), tone: totals.atRisk > 0 ? 'text-red-700' : '' },
+          ].map((m, i) => (
+            <div key={m.k} className={`px-5 py-4 ${i >= 2 ? 'border-t border-gray-200 sm:border-t-0' : ''} ${i % 2 === 1 ? 'border-l border-gray-200 sm:border-l-0' : ''}`}>
+              <dt className="text-[13.5px] text-gray-500">{m.k}</dt>
+              <dd className={`mt-1.5 text-[26px] font-semibold leading-none tnum ${m.tone || 'text-gray-900'}`} style={{ fontStretch: '108%', letterSpacing: '-0.02em' }}>
+                {m.v}
+              </dd>
             </div>
-          </div>
-          <button 
-            onClick={() => navigate('/marketing')}
-            className="mt-4 pt-3 border-t border-slate-100 text-xs text-indigo-600 font-semibold flex items-center gap-1 hover:text-indigo-800 transition-colors"
-          >
-            View all insights <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          ))}
+        </dl>
+      </section>
+
+      {/* Share of customers vs share of revenue */}
+      <section aria-labelledby="mix-title">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 id="mix-title" className="text-[18px] font-semibold" style={{ fontStretch: '110%' }}>Who brings in the revenue</h3>
+          <p className="text-[13.5px] text-gray-500">Each segment's share of customers compared with its share of revenue</p>
         </div>
-
-        {/* Population Donut Chart with Clean Side Legend */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:col-span-2">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-semibold text-slate-800">Segment Population Distribution</h3>
-            <span className="text-xs font-medium text-slate-500">{totalCustomers.toLocaleString()} total users</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-            {/* Donut Chart */}
-            <div className="md:col-span-6 h-64 relative flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={68}
-                    outerRadius={96}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {pieData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<ModernChartTooltip valueSuffix=" users" />} />
-                </PieChart>
-              </ResponsiveContainer>
-              {/* Centered KPI text */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-2xl font-black text-slate-800">{totalCustomers.toLocaleString()}</span>
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Users</span>
+        <div className="mt-4 space-y-3 rounded-2xl border border-gray-200 bg-white p-5">
+          {[
+            { label: 'Customers', key: 'percentage' as const },
+            { label: 'Revenue', key: 'revenue_contribution' as const },
+          ].map((row) => (
+            <div key={row.label} className="grid grid-cols-[80px_1fr] items-center gap-4">
+              <span className="text-[13.5px] text-gray-600">{row.label}</span>
+              <div className="flex h-9 w-full overflow-hidden rounded-lg">
+                {ordered.map((s) => {
+                  const w = s[row.key] ?? 0;
+                  if (w <= 0) return null;
+                  const dim = hovered !== null && hovered !== s.segment_id;
+                  return (
+                    <button
+                      key={s.segment_id}
+                      type="button"
+                      onMouseEnter={() => setHovered(s.segment_id)}
+                      onMouseLeave={() => setHovered(null)}
+                      onFocus={() => setHovered(s.segment_id)}
+                      onBlur={() => setHovered(null)}
+                      onClick={() => navigate('/segments')}
+                      className="relative h-full border-r-2 border-white transition-opacity last:border-r-0"
+                      style={{ width: `${w}%`, background: segmentColor(s.segment_id), opacity: dim ? 0.25 : 1 }}
+                      title={`${s.segment_name}: ${w.toFixed(1)}% of ${row.label.toLowerCase()}`}
+                      aria-label={`${s.segment_name}: ${w.toFixed(1)}% of ${row.label.toLowerCase()}`}
+                    >
+                      {w >= 9 && <span className={`absolute inset-0 items-center justify-center text-[12px] font-semibold text-white tnum ${w >= 16 ? 'flex' : 'hidden sm:flex'}`}>{Math.round(w)}%</span>}
+                    </button>
+                  );
+                })}
               </div>
             </div>
+          ))}
+          <p className="pl-[96px] text-[13px] text-gray-500 max-sm:pl-0">
+            {hovered !== null
+              ? (() => { const s = segments.find((x) => x.segment_id === hovered)!; return `${s.segment_name}: ${s.percentage.toFixed(1)}% of customers, ${s.revenue_contribution.toFixed(1)}% of revenue.`; })()
+              : 'Hover a block to compare one segment. Segments are ordered by revenue.'}
+          </p>
+        </div>
+      </section>
 
-            {/* Structured Segment Legend List (No text overlaps!) */}
-            <div className="md:col-span-6 space-y-2 max-h-64 overflow-y-auto pr-1">
-              {pieData.map((item, index) => {
-                const pct = totalCustomers > 0 ? ((item.value / totalCustomers) * 100).toFixed(1) : '0';
-                return (
-                  <div 
-                    key={index}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 border border-slate-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 min-w-0 pr-2">
-                      <span 
-                        className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
-                        style={{ backgroundColor: COLORS[index % COLORS.length] }} 
-                      />
-                      <span className="text-xs font-medium text-slate-700 truncate" title={item.name}>
-                        {item.name}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs font-semibold text-slate-800">{item.value.toLocaleString()}</span>
-                      <span className="text-[11px] px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 font-bold min-w-[42px] text-right">
-                        {pct}%
-                      </span>
-                    </div>
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
+        {/* Segment table */}
+        <section aria-labelledby="seg-title" className="min-w-0">
+          <div className="flex items-baseline justify-between">
+            <h3 id="seg-title" className="text-[18px] font-semibold" style={{ fontStretch: '110%' }}>Segments and what to do next</h3>
+            <Link to="/segments" className="text-[14px] font-medium text-indigo-700 hover:underline">Explore segments</Link>
+          </div>
+          <div className="mt-4 overflow-x-auto rounded-2xl border border-gray-200 bg-white">
+            <table className="w-full min-w-[720px] text-left text-[14px]">
+              <thead>
+                <tr className="border-b border-gray-200 text-[13px] text-gray-500">
+                  <th scope="col" className="py-3 pl-5 pr-3 font-medium">Segment</th>
+                  <th scope="col" className="px-3 py-3 text-right font-medium">Customers</th>
+                  <th scope="col" className="px-3 py-3 text-right font-medium">Revenue</th>
+                  <th scope="col" className="px-3 py-3 font-medium">Churn risk</th>
+                  <th scope="col" className="py-3 pl-3 pr-5 font-medium">Recommended action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ordered.map((s) => {
+                  const a = actionFor(s.segment_id);
+                  const channels = a ? (Array.isArray(a.channel) ? a.channel.join(', ') : a.channel) : '';
+                  return (
+                    <tr
+                      key={s.segment_id}
+                      className={`border-b border-gray-100 last:border-0 ${hovered === s.segment_id ? 'bg-gray-50' : ''}`}
+                      onMouseEnter={() => setHovered(s.segment_id)}
+                      onMouseLeave={() => setHovered(null)}
+                    >
+                      <td className="py-3 pl-5 pr-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: segmentColor(s.segment_id) }} />
+                          <span className="font-medium text-gray-900">{s.segment_name}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-right text-gray-700 tnum">{s.customer_count.toLocaleString()}</td>
+                      <td className="px-3 py-3 text-right text-gray-900 tnum">{formatMoney(s.revenue ?? 0)}</td>
+                      <td className="px-3 py-3"><RiskBar value={s.avg_churn_risk} /></td>
+                      <td className="py-3 pl-3 pr-5 text-gray-700">
+                        {a ? (
+                          <>
+                            <span className="font-medium text-gray-900">{pretty(a.strategy)}</span>
+                            <span className="text-gray-500">{` with ${pretty(a.offer).toLowerCase()}, ${a.frequency} by ${channels.replace(/_/g, ' ')}`}</span>
+                          </>
+                        ) : <span className="text-gray-400">No action generated</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* Alerts */}
+        <section id="alerts" aria-labelledby="alerts-title" className="scroll-mt-24">
+          <div className="flex items-baseline justify-between">
+            <h3 id="alerts-title" className="text-[18px] font-semibold" style={{ fontStretch: '110%' }}>Alerts</h3>
+            <span className="text-[13.5px] text-gray-500 tnum">{highAlerts.length} need attention</span>
+          </div>
+          <ul className="mt-4 divide-y divide-gray-100 rounded-2xl border border-gray-200 bg-white">
+            {alerts.length === 0 && <li className="px-5 py-6 text-[14px] text-gray-500">No alerts. Behaviour looks stable across segments.</li>}
+            {alerts.slice(0, 6).map((a, i) => {
+              const sev = ['critical', 'high'].includes(a.severity) ? 'text-red-600' : a.severity === 'medium' ? 'text-amber-600' : 'text-gray-400';
+              return (
+                <li key={i} className="flex gap-3 px-5 py-4">
+                  <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${sev}`} strokeWidth={2} aria-label={`${a.severity} severity`} />
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-medium leading-snug text-gray-900">{a.title}</p>
+                    <p className="mt-1 text-[13.5px] leading-snug text-gray-600">{a.message}</p>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Horizontal Bar Chart with Truncated & Spaced Y-Axis */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <h3 className="text-lg font-semibold text-slate-800 mb-1">Top Revenue Contributing Segments</h3>
-          <p className="text-xs text-slate-400 mb-4">Ranked by overall financial contribution</p>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
-                data={revenueData} 
-                layout="vertical" 
-                margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-                <XAxis 
-                  type="number" 
-                  tick={{ fontSize: 11, fill: '#64748B' }}
-                  tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`} 
-                />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  width={155} 
-                  tick={<TruncatedYAxisTick maxChars={20} />} 
-                />
-                <Tooltip content={<ModernChartTooltip isCurrency={true} />} />
-                <Bar dataKey="revenue" radius={[0, 6, 6, 0]}>
-                  {revenueData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Radar Chart with Proper Perimeter Margins */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-          <h3 className="text-lg font-semibold text-slate-800 mb-1">Behavioral Profile Comparison</h3>
-          <p className="text-xs text-slate-400 mb-2">Multi-dimensional scoring across key segments</p>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart 
-                cx="50%" 
-                cy="50%" 
-                outerRadius="58%" 
-                data={formattedRadarData}
-                margin={{ top: 10, right: 20, bottom: 20, left: 20 }}
-              >
-                <PolarGrid stroke="#e2e8f0" />
-                <PolarAngleAxis 
-                  dataKey="metric" 
-                  tick={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} 
-                />
-                {radarData.map((s, i) => (
-                  <Radar 
-                    key={s.name} 
-                    name={s.name} 
-                    dataKey={s.name} 
-                    stroke={COLORS[i % COLORS.length]} 
-                    fill={COLORS[i % COLORS.length]} 
-                    fillOpacity={0.25} 
-                  />
-                ))}
-                <Legend 
-                  wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} 
-                />
-                <Tooltip content={<ModernChartTooltip />} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+                </li>
+              );
+            })}
+          </ul>
+          <Link to="/rescue" className="mt-3 inline-flex items-center gap-1 text-[14px] font-medium text-indigo-700 hover:underline">
+            See customers to rescue <ChevronRight className="h-4 w-4" />
+          </Link>
+        </section>
       </div>
     </div>
   );
-};
-
-export default Dashboard;
+}

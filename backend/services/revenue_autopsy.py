@@ -33,7 +33,7 @@ class RevenueAutopsy:
             }
 
         # Attempt to find a revenue column, or mock one
-        revenue_cols = [c for c in features_df.columns if 'revenue' in c.lower() or 'spend' in c.lower() or 'ltv' in c.lower()]
+        revenue_cols = ['monetary_value'] if 'monetary_value' in features_df.columns else [c for c in features_df.columns if 'revenue' in c.lower() or 'spend' in c.lower() or 'ltv' in c.lower()]
         
         df = pd.DataFrame(index=features_df.index)
         df['segment_id'] = labels

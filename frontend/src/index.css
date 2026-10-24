@@ -1,43 +1,184 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Mona+Sans:wdth,wght@75..125,200..900&display=swap');
 @import "tailwindcss";
 
+/* Dark mode is a class on <html>, set by the theme toggle (and the OS preference on first visit). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * BehaviorIQ design tokens.
+ * Every page was written against Tailwind's gray / slate / indigo scales. Rather than
+ * rewrite 18 pages, those scales are remapped here to the BehaviorIQ palette, and each
+ * one flips for dark mode, so the whole app follows one theme.
+ */
 :root {
-  font-family: 'Inter', system-ui, sans-serif;
+  /* ink & paper — a cool green-grey */
+  --g-50: #f4f6f3;  --g-100: #ebefec; --g-200: #dce2de; --g-300: #c3ccc7;
+  --g-400: #97a39d; --g-500: #6b7872; --g-600: #535f5a; --g-700: #3c4743;
+  --g-800: #28322e; --g-900: #18211e; --g-950: #0e1311;
+  --surface: #ffffff;
+
+  /* ultramarine accent */
+  --a-50: #eef0fd;  --a-100: #dde1fb; --a-200: #bbc3f6; --a-300: #8e9aee;
+  --a-400: #5f6fe2; --a-500: #3f51d8; --a-600: #2e44d1; --a-700: #2535ae;
+  --a-800: #1f2c8a; --a-900: #1b256c; --a-950: #11173f;
+
+  /* status tints (only the light/dark-sensitive steps) */
+  --red-50: #fdf1f0;   --red-100: #fbe1de;   --red-200: #f5c3bd;   --red-700: #b42d1f;   --red-800: #8f2418;
+  --grn-50: #eef8f3;   --grn-100: #d8f0e4;   --grn-200: #b2e0ca;   --grn-700: #17734f;   --grn-800: #125c3f;
+  --amb-50: #fdf6e7;   --amb-100: #faebc6;   --amb-200: #f3d68d;   --amb-700: #93600b;   --amb-800: #744b09;
+  --blu-50: #eef5fb;   --blu-100: #d9e9f6;   --blu-200: #b3d3ed;   --blu-700: #1d5f91;   --blu-800: #174b73;
+
+  --chart-grid: #8a98922e;
+  --shadow-color: 150 12% 20%;
+  color-scheme: light;
 }
 
-body {
-  background-color: #f9fafb;
-  color: #111827;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+.dark {
+  --g-50: #111715;  --g-100: #18201d; --g-200: #242e2a; --g-300: #34403b;
+  --g-400: #5a6862; --g-500: #8a9892; --g-600: #a6b2ad; --g-700: #c3cdc8;
+  --g-800: #dae1dd; --g-900: #ebf0ed; --g-950: #f6f8f7;
+  --surface: #161d1a;
+
+  --a-50: #171c3c;  --a-100: #1e2552; --a-200: #2b3575; --a-300: #3e4ba3;
+  --a-400: #5f6dd2; --a-500: #7d8af1; --a-600: #8e9cff; --a-700: #acb6ff;
+  --a-800: #c9d0ff; --a-900: #e2e6ff; --a-950: #f1f3ff;
+
+  --red-50: #2a1715;   --red-100: #3a1d1a;   --red-200: #5a2a24;   --red-700: #f2a196;   --red-800: #f8c3bb;
+  --grn-50: #12261d;   --grn-100: #173126;   --grn-200: #21473a;   --grn-700: #86d6b2;   --grn-800: #b0e8cf;
+  --amb-50: #2a2112;   --amb-100: #382b14;   --amb-200: #55411a;   --amb-700: #f0c66f;   --amb-800: #f6dca0;
+  --blu-50: #13202c;   --blu-100: #192b3b;   --blu-200: #23405a;   --blu-700: #93c4ea;   --blu-800: #bcdaf2;
+
+  --chart-grid: #8a98921f;
+  --shadow-color: 150 30% 2%;
+  color-scheme: dark;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #f1f5f9; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+@theme inline {
+  --font-sans: 'Mona Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Mona Sans', ui-sans-serif, system-ui, sans-serif;
 
+  --color-white: var(--surface);
+  --color-paper: var(--g-50);
+  --color-ink: var(--g-900);
+
+  --color-gray-50: var(--g-50);   --color-gray-100: var(--g-100); --color-gray-200: var(--g-200);
+  --color-gray-300: var(--g-300); --color-gray-400: var(--g-400); --color-gray-500: var(--g-500);
+  --color-gray-600: var(--g-600); --color-gray-700: var(--g-700); --color-gray-800: var(--g-800);
+  --color-gray-900: var(--g-900); --color-gray-950: var(--g-950);
+
+  --color-slate-50: var(--g-50);   --color-slate-100: var(--g-100); --color-slate-200: var(--g-200);
+  --color-slate-300: var(--g-300); --color-slate-400: var(--g-400); --color-slate-500: var(--g-500);
+  --color-slate-600: var(--g-600); --color-slate-700: var(--g-700); --color-slate-800: var(--g-800);
+  --color-slate-900: var(--g-900); --color-slate-950: var(--g-950);
+
+  --color-indigo-50: var(--a-50);   --color-indigo-100: var(--a-100); --color-indigo-200: var(--a-200);
+  --color-indigo-300: var(--a-300); --color-indigo-400: var(--a-400); --color-indigo-500: var(--a-500);
+  --color-indigo-600: var(--a-600); --color-indigo-700: var(--a-700); --color-indigo-800: var(--a-800);
+  --color-indigo-900: var(--a-900); --color-indigo-950: var(--a-950);
+
+  /* the old pages mixed purple/violet into the brand; fold them into the one accent */
+  --color-violet-50: var(--a-50);   --color-violet-100: var(--a-100); --color-violet-200: var(--a-200);
+  --color-violet-500: var(--a-500); --color-violet-600: var(--a-600); --color-violet-700: var(--a-700);
+  --color-purple-50: var(--a-50);   --color-purple-100: var(--a-100); --color-purple-200: var(--a-200);
+  --color-purple-500: var(--a-500); --color-purple-600: var(--a-600); --color-purple-700: var(--a-700);
+  --color-purple-800: var(--a-800); --color-purple-900: var(--a-900);
+
+  --color-red-50: var(--red-50);  --color-red-100: var(--red-100); --color-red-200: var(--red-200);
+  --color-red-700: var(--red-700); --color-red-800: var(--red-800);
+  --color-green-50: var(--grn-50);  --color-green-100: var(--grn-100); --color-green-200: var(--grn-200);
+  --color-green-700: var(--grn-700); --color-green-800: var(--grn-800);
+  --color-emerald-50: var(--grn-50);  --color-emerald-100: var(--grn-100); --color-emerald-200: var(--grn-200);
+  --color-emerald-700: var(--grn-700); --color-emerald-800: var(--grn-800);
+  --color-amber-50: var(--amb-50);  --color-amber-100: var(--amb-100); --color-amber-200: var(--amb-200);
+  --color-amber-700: var(--amb-700); --color-amber-800: var(--amb-800);
+  --color-yellow-50: var(--amb-50);  --color-yellow-100: var(--amb-100); --color-yellow-200: var(--amb-200);
+  --color-yellow-700: var(--amb-700); --color-yellow-800: var(--amb-800);
+  --color-orange-50: var(--amb-50);  --color-orange-100: var(--amb-100); --color-orange-700: var(--amb-700);
+  --color-blue-50: var(--blu-50);  --color-blue-100: var(--blu-100); --color-blue-200: var(--blu-200);
+  --color-blue-700: var(--blu-700); --color-blue-800: var(--blu-800);
+  --color-sky-50: var(--blu-50);  --color-sky-100: var(--blu-100); --color-sky-700: var(--blu-700);
+
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+  --shadow-sm: 0 1px 2px hsl(var(--shadow-color) / 0.06);
+  --shadow-md: 0 2px 4px hsl(var(--shadow-color) / 0.06), 0 6px 16px -4px hsl(var(--shadow-color) / 0.10);
+  --shadow-lg: 0 4px 8px hsl(var(--shadow-color) / 0.06), 0 16px 40px -8px hsl(var(--shadow-color) / 0.16);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-variation-settings: 'wdth' 100;
+    background: var(--g-50);
+  }
+  body {
+    background: var(--g-50);
+    color: var(--g-900);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3 {
+    font-stretch: 112%;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  p { text-wrap: pretty; }
+  :focus-visible {
+    outline: 2px solid var(--a-600);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  ::selection { background: var(--a-200); color: var(--g-950); }
+}
+
+kbd { font-family: var(--font-sans); }
+
+/* Numbers that sit in columns or change in place */
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* Display type: the wide cut of Mona Sans is the brand's voice */
+.display {
+  font-stretch: 125%;
+  font-weight: 760;
+  letter-spacing: -0.03em;
+  line-height: 0.98;
+}
+
+/* Scrollbars */
+* { scrollbar-width: thin; scrollbar-color: var(--g-300) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--g-300); border-radius: 8px; border: 2px solid var(--g-50); }
+::-webkit-scrollbar-thumb:hover { background: var(--g-400); }
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
-.custom-scrollbar:hover::-webkit-scrollbar-thumb { background: #cbd5e1; }
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Recharts: quiet axes and grid that work in both themes */
+.recharts-cartesian-grid line { stroke: var(--chart-grid); }
+.recharts-cartesian-axis-tick-value { fill: var(--g-500); }
+.recharts-cartesian-axis-line, .recharts-cartesian-axis-tick-line { stroke: var(--g-300); }
+.recharts-polar-grid-angle line, .recharts-polar-grid-concentric polygon { stroke: var(--g-200); }
+.recharts-polar-angle-axis-tick-value { fill: var(--g-600); }
+.recharts-legend-item-text { color: var(--g-700) !important; }
+.recharts-default-tooltip {
+  background: var(--surface) !important;
+  border: 1px solid var(--g-200) !important;
+  border-radius: 10px !important;
+  box-shadow: var(--shadow-lg);
 }
+.recharts-tooltip-label { color: var(--g-900) !important; }
 
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
+/* The old pages' entrance animation: kept, but subtle */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.animate-fade-in { animation: fadeIn 0.25s ease-out; }
+@keyframes pulse-slow { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+.animate-pulse-slow { animation: pulse-slow 2s ease-in-out infinite; }
 
-@keyframes pulse-slow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-
-.animate-pulse-slow {
-  animation: pulse-slow 2s ease-in-out infinite;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

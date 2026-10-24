@@ -9,53 +9,31 @@ export interface StatCardProps {
   trendUp?: boolean;
   icon?: ReactNode;
   color?: string;
+  note?: string;
 }
 
-export function StatCard({ 
-  title, 
-  value, 
-  change, 
-  trend,
-  trendUp,
-  icon, 
-  color = 'text-indigo-600' 
-}: StatCardProps) {
+/** A single figure with its label. Icons are accepted for compatibility but kept quiet. */
+export function StatCard({ title, value, change, trend, trendUp, icon, note }: StatCardProps) {
+  const up = trend !== undefined ? trendUp !== false : change !== undefined ? change >= 0 : undefined;
+  const delta = trend ?? (change !== undefined ? `${Math.abs(change)}%` : undefined);
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:shadow-md animate-fade-in">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-gray-500">{title}</p>
-        {icon && (
-          <div className={`rounded-md bg-gray-50 p-2 ${color}`}>
-            {icon}
-          </div>
+    <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[13.5px] text-gray-500">{title}</p>
+        {icon && <span className="text-gray-300 [&>svg]:h-4 [&>svg]:w-4">{icon}</span>}
+      </div>
+      <div className="mt-2 flex items-baseline gap-3">
+        <p className="text-[28px] font-semibold leading-none text-gray-900 tnum" style={{ fontStretch: '108%', letterSpacing: '-0.02em' }}>
+          {value}
+        </p>
+        {delta !== undefined && (
+          <span className={`inline-flex items-center gap-1 text-[13px] font-medium ${up ? 'text-emerald-700' : 'text-red-700'}`}>
+            {up ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+            {delta}
+          </span>
         )}
       </div>
-      
-      <div className="mt-4 flex items-baseline gap-4">
-        <h3 className="text-3xl font-bold text-gray-900">{value}</h3>
-        
-        {trend !== undefined && (
-          <div className={`flex items-center text-sm font-medium ${trendUp !== false ? 'text-green-600' : 'text-red-600'}`}>
-            {trendUp !== false ? (
-              <TrendingUp className="mr-1 h-4 w-4" />
-            ) : (
-              <TrendingDown className="mr-1 h-4 w-4" />
-            )}
-            {trend}
-          </div>
-        )}
-
-        {trend === undefined && change !== undefined && (
-          <div className={`flex items-center text-sm font-medium ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {change >= 0 ? (
-              <TrendingUp className="mr-1 h-4 w-4" />
-            ) : (
-              <TrendingDown className="mr-1 h-4 w-4" />
-            )}
-            {Math.abs(change)}%
-          </div>
-        )}
-      </div>
+      {note && <p className="mt-2 text-[12.5px] text-gray-500">{note}</p>}
     </div>
   );
 }

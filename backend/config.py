@@ -23,7 +23,7 @@ class Settings(BaseSettings):
 
     # ML Configuration
     DEFAULT_CLUSTERS: int = 5
-    MIN_CLUSTERS: int = 2
+    MIN_CLUSTERS: int = 4  # actionability lower bound, see experiments/
     MAX_CLUSTERS: int = 10
     BOOTSTRAP_ITERATIONS: int = 5
     RANDOM_STATE: int = 42

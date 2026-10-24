@@ -33,7 +33,7 @@ export default function Customer360() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-indigo-600"></div>
       </div>
     );
   }
@@ -48,15 +48,17 @@ export default function Customer360() {
     );
   }
 
-  // Mocking score cards if not perfectly matching API
+  // Scores come from the scoring engine (0-100 percentiles); a missing score shows as 0, never a made-up value.
+  const sc = customer.scores || {};
+  const score = (key: string) => Math.round(Number(sc[`${key}_score`] ?? sc[key] ?? 0));
   const scores = [
-    { name: 'Engagement', value: customer.scores?.engagement || Math.floor(Math.random() * 100) },
-    { name: 'Loyalty', value: customer.scores?.loyalty || Math.floor(Math.random() * 100) },
-    { name: 'Value', value: customer.scores?.value || Math.floor(Math.random() * 100) },
-    { name: 'Purchase Intent', value: customer.scores?.purchase_intent || Math.floor(Math.random() * 100) },
-    { name: 'Discount Sens.', value: customer.scores?.discount_sensitivity || Math.floor(Math.random() * 100) },
-    { name: 'Churn Risk', value: customer.scores?.churn_risk || Math.floor(Math.random() * 100) },
-    { name: 'Product Affinity', value: customer.scores?.product_affinity || Math.floor(Math.random() * 100) },
+    { name: 'Engagement', value: score('engagement') },
+    { name: 'Loyalty', value: score('loyalty') },
+    { name: 'Value', value: score('value') },
+    { name: 'Purchase Intent', value: score('purchase_intent') },
+    { name: 'Discount Sens.', value: score('discount_sensitivity') },
+    { name: 'Churn Risk', value: score('churn_risk') },
+    { name: 'Product Affinity', value: score('product_affinity') },
   ];
 
   const getScoreColor = (val: number, inverse: boolean = false) => {
@@ -76,9 +78,9 @@ export default function Customer360() {
   };
 
   const dnaBands = customer.dna?.bands || [
-    { label: 'High Spender', value: 85, color: '#10B981' },
-    { label: 'Weekend Shopper', value: 60, color: '#3B82F6' },
-    { label: 'Discount Driven', value: 30, color: '#F59E0B' },
+    { label: 'High Spender', value: 85, color: '#1E9E78' },
+    { label: 'Weekend Shopper', value: 60, color: '#4A6FE0' },
+    { label: 'Discount Driven', value: 30, color: '#D99A1E' },
   ];
 
   const behavioralChanges = customer.behavioral_changes || [
@@ -110,9 +112,9 @@ export default function Customer360() {
           </div>
         </div>
         <div className="text-right">
-          <div className="text-sm font-medium text-gray-500 uppercase tracking-wider">Behavioral Score</div>
-          <div className="text-5xl font-black text-indigo-600 mt-1">
-            {customer.behavioral_score || '85'}
+          <div className="text-[13.5px] text-gray-500">Overall behaviour score</div>
+          <div className="text-5xl font-semibold text-indigo-600 mt-1 tnum" style={{ fontStretch: '110%' }}>
+            {score('composite')}
           </div>
         </div>
       </div>
@@ -157,7 +159,7 @@ export default function Customer360() {
                 <div className="w-full bg-gray-100 rounded-full h-2.5">
                   <div 
                     className="h-2.5 rounded-full" 
-                    style={{ width: `${band.value}%`, backgroundColor: band.color || '#6366F1' }}
+                    style={{ width: `${band.value}%`, backgroundColor: band.color || '#2E44D1' }}
                   ></div>
                 </div>
               </div>
@@ -171,9 +173,9 @@ export default function Customer360() {
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart cx="50%" cy="50%" outerRadius="70%" data={scores}>
                 <PolarGrid />
-                <PolarAngleAxis dataKey="name" tick={{ fill: '#4B5563', fontSize: 10 }} />
+                <PolarAngleAxis dataKey="name" tick={{ fill: '#535F5A', fontSize: 10 }} />
                 <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                <Radar name="Customer" dataKey="value" stroke="#6366F1" fill="#6366F1" fillOpacity={0.5} />
+                <Radar name="Customer" dataKey="value" stroke="#2E44D1" fill="#2E44D1" fillOpacity={0.5} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
@@ -200,9 +202,9 @@ export default function Customer360() {
           </div>
 
           <div className="bg-indigo-50 p-6 rounded-xl border border-indigo-100">
-            <h3 className="text-lg font-semibold text-indigo-900 mb-2">Recommended Action</h3>
+            <h3 className="text-lg font-semibold text-indigo-900 mb-2">Recommended action for this segment</h3>
             <p className="text-indigo-700 text-sm">
-              {customer.recommended_action || "Target with re-engagement campaign offering a small incentive to return to the platform."}
+              {customer.recommended_action || 'No action has been generated for this segment yet. Run the analysis to create one.'}
             </p>
           </div>
         </div>

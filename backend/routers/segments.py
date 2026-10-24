@@ -22,7 +22,8 @@ def compare_segments(ids: str = Query(...)):
     try:
         segment_ids = [int(id.strip()) for id in ids.split(",")]
         profiler = SegmentProfiler()
-        comparison = profiler.get_segment_comparison(state['profiles'], segment_ids)
+        profiler.profiles = state['profiles']
+        comparison = profiler.get_segment_comparison(segment_ids)
         return comparison
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

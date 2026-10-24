@@ -65,7 +65,7 @@ const BehaviorJourney = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-indigo-600"></div>
       </div>
     );
   }
@@ -134,17 +134,17 @@ const BehaviorJourney = () => {
                 data={segmentGrowthData}
                 margin={{ top: 10, right: 25, left: 10, bottom: 50 }}
               >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#8A98922E" />
                 <XAxis 
                   dataKey="name" 
                   interval={0}
                   tick={<TruncatedXAxisTick maxChars={14} angle={-35} />} 
                 />
-                <YAxis tick={{ fontSize: 11, fill: '#64748B' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#6D7B76' }} />
                 <ModernChartTooltip valueSuffix=" users" />
                 <Bar dataKey="netChange" radius={[4, 4, 0, 0]}>
                   {segmentGrowthData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.netChange >= 0 ? '#10B981' : '#EF4444'} />
+                    <Cell key={`cell-${index}`} fill={entry.netChange >= 0 ? '#1E9E78' : '#D2483A'} />
                   ))}
                 </Bar>
               </BarChart>

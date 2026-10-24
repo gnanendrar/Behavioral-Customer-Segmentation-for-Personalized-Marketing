@@ -35,7 +35,7 @@ const SegmentExplorer = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-indigo-600"></div>
       </div>
     );
   }
@@ -165,9 +165,9 @@ const SegmentExplorer = () => {
                             { metric: 'Retention', A: Math.max(0, 100 - churnRisk), fullMark: 100 },
                           ]}
                         >
-                          <PolarGrid stroke="#e2e8f0" />
-                          <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} />
-                          <Radar name={selectedSegment.segment_name} dataKey="A" stroke="#6366F1" fill="#6366F1" fillOpacity={0.5} />
+                          <PolarGrid stroke="#8A98922E" />
+                          <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11, fill: '#535F5A', fontWeight: 600 }} />
+                          <Radar name={selectedSegment.segment_name} dataKey="A" stroke="#2E44D1" fill="#2E44D1" fillOpacity={0.5} />
                           <Tooltip />
                         </RadarChart>
                       </ResponsiveContainer>

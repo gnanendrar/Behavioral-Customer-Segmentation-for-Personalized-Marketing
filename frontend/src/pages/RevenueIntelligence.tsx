@@ -7,7 +7,7 @@ import PageHeader from '../components/common/PageHeader';
 import StatCard from '../components/common/StatCard';
 import { TruncatedXAxisTick, ModernChartTooltip } from '../components/common/ChartHelpers';
 
-const COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#EF4444', '#F59E0B', '#10B981', '#06B6D4', '#3B82F6', '#14B8A6', '#A855F7'];
+const COLORS = ['#2E44D1', '#7A55DB', '#CF4B78', '#D2483A', '#D99A1E', '#1E9E78', '#2A93C2', '#4A6FE0', '#2AA198', '#B0569F'];
 
 const RevenueIntelligence = () => {
   const [autopsy, setAutopsy] = useState<RevenueAutopsy | null>(null);
@@ -41,7 +41,8 @@ const RevenueIntelligence = () => {
 
   const totalRev = autopsy.total_revenue || 0;
   const projRev = forecast.total_projected_revenue || 0;
-  const growth = totalRev > 0 ? ((projRev - totalRev) / totalRev) * 100 : (forecast.total_growth_pct || 0);
+  // Growth compares the next 90 days with the same-length period at the historical run rate.
+  const growth = forecast.total_growth_pct ?? 0;
   
   let topSeg = autopsy.top_segment || '';
   let maxSegRev = -1;
@@ -59,7 +60,8 @@ const RevenueIntelligence = () => {
   }));
 
   const forecastData = forecastSegments.map((s: any) => {
-    const current = autopsySegments.find((x: any) => x.segment_name === s.segment_name)?.revenue || 0;
+    // same-length period at the historical run rate, so the bars compare like with like
+    const current = s.current_period_revenue ?? 0;
     const projected = s.projected_revenue ?? 0;
     return {
       name: s.segment_name,
@@ -91,12 +93,12 @@ const RevenueIntelligence = () => {
           icon={<DollarSign className="text-blue-500" />} 
         />
         <StatCard 
-          title="Projected Revenue" 
+          title="Projected, next 90 days" 
           value={`$${projRev.toLocaleString(undefined, {maximumFractionDigits:0})}`} 
           icon={<TrendingUp className="text-purple-500" />} 
         />
         <StatCard 
-          title="Projected Growth" 
+          title="Change vs. usual 90 days" 
           value={`${growth > 0 ? '+' : ''}${growth.toFixed(1)}%`} 
           icon={<PieChartIcon className={growth >= 0 ? 'text-green-500' : 'text-red-500'} />} 
         />
@@ -193,7 +195,7 @@ const RevenueIntelligence = () => {
 
         {/* Current vs Projected Revenue Bar Chart with Truncated XAxis */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <h3 className="text-lg font-semibold mb-1 text-gray-800">Current vs Projected Revenue</h3>
+          <h3 className="text-lg font-semibold mb-1 text-gray-800">Usual vs projected revenue, next 90 days</h3>
           <p className="text-xs text-gray-400 mb-4">90-day forward growth projections by cluster</p>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -201,20 +203,20 @@ const RevenueIntelligence = () => {
                 data={forecastData} 
                 margin={{ top: 10, right: 20, left: 10, bottom: 50 }}
               >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#8A98922E" />
                 <XAxis 
                   dataKey="name" 
                   interval={0}
                   tick={<TruncatedXAxisTick maxChars={14} angle={-35} />} 
                 />
                 <YAxis 
-                  tick={{ fontSize: 11, fill: '#64748B' }}
+                  tick={{ fontSize: 11, fill: '#6D7B76' }}
                   tickFormatter={(val) => `$${(val/1000).toFixed(0)}k`} 
                 />
                 <ModernChartTooltip isCurrency={true} />
                 <Legend wrapperStyle={{ paddingTop: 14, fontSize: '12px' }} />
-                <Bar dataKey="Current" fill="#6366F1" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Projected" fill="#10B981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Current" name="Usual 90 days" fill="#2E44D1" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Projected" fill="#1E9E78" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -228,7 +230,7 @@ const RevenueIntelligence = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-4 py-3 text-left font-medium text-gray-500 uppercase">Segment</th>
-                <th scope="col" className="px-4 py-3 text-right font-medium text-gray-500 uppercase">Current Rev</th>
+                <th scope="col" className="px-4 py-3 text-right font-medium text-gray-500 uppercase">Usual 90 days</th>
                 <th scope="col" className="px-4 py-3 text-right font-medium text-gray-500 uppercase">Projected Rev</th>
                 <th scope="col" className="px-4 py-3 text-right font-medium text-gray-500 uppercase">Growth %</th>
                 <th scope="col" className="px-4 py-3 text-center font-medium text-gray-500 uppercase">Outlook</th>

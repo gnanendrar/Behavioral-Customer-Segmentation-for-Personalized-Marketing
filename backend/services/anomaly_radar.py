@@ -17,7 +17,7 @@ class AnomalyRadar:
         anomalies = []
         
         # Ensure we have a customer_id column or index
-        customer_ids = features_df.index if 'customer_id' not in features_df.columns else features_df['customer_id'].values
+        customer_ids = np.asarray(features_df.index if 'customer_id' not in features_df.columns else features_df['customer_id'].astype(str))
 
         # Select numeric columns to analyze
         numeric_cols = features_df.select_dtypes(include=[np.number]).columns.tolist()
@@ -25,6 +25,7 @@ class AnomalyRadar:
         # Combine data for easier groupby operations
         analysis_df = features_df[numeric_cols].copy()
         analysis_df['segment_id'] = labels
+        analysis_df = analysis_df.reset_index(drop=True)
 
         # Calculate segment means and standard deviations
         segment_stats = analysis_df.groupby('segment_id').agg(['mean', 'std'])
@@ -64,7 +65,7 @@ class AnomalyRadar:
                         severity = "critical"
                         
                     anomalies.append({
-                        "customer_id": str(customer_ids[i] if isinstance(customer_ids, (list, np.ndarray, pd.Index)) else customer_ids),
+                        "customer_id": str(customer_ids[i]),
                         "segment_id": segment,
                         "anomaly_type": anomaly_type,
                         "severity": severity,

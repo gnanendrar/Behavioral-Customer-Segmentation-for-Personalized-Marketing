@@ -58,8 +58,10 @@ class RevenueForecaster:
             # Trend factor from behavioral signals
             trend_factor = self._compute_trend_factor(seg_features, scores_df[mask] if scores_df is not None else None, profile)
 
-            # Project
-            projected_revenue = daily_rate * horizon_days * trend_factor
+            # Project. Compare like with like: the next `horizon_days` against the same-length
+            # period at the segment's historical run rate (not against lifetime revenue).
+            baseline_period_revenue = daily_rate * horizon_days
+            projected_revenue = baseline_period_revenue * trend_factor
             confidence_width = projected_revenue * self._confidence_spread(profile, len(seg_features))
 
             # Growth classification
@@ -83,7 +85,8 @@ class RevenueForecaster:
                 "segment_id": seg_id,
                 "segment_name": seg_name,
                 "customer_count": profile.get("customer_count", int(mask.sum())),
-                "current_period_revenue": round(float(current_revenue), 2),
+                "current_period_revenue": round(float(baseline_period_revenue), 2),
+                "lifetime_revenue": round(float(current_revenue), 2),
                 "projected_revenue": round(float(projected_revenue), 2),
                 "projected_revenue_low": round(float(projected_revenue - confidence_width), 2),
                 "projected_revenue_high": round(float(projected_revenue + confidence_width), 2),
@@ -96,7 +99,7 @@ class RevenueForecaster:
                 "confidence_level": "Medium",
             })
 
-            total_current += current_revenue
+            total_current += baseline_period_revenue
             total_projected += projected_revenue
 
         # Sort by projected revenue descending

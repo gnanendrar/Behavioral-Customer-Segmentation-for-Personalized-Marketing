@@ -12,7 +12,7 @@ class CopilotRequest(BaseModel):
 
 class CampaignGenRequest(BaseModel):
     segment_id: int
-    instructions: str
+    instructions: str = ''
 
 @router.post("/copilot")
 def ask_copilot(req: CopilotRequest):
@@ -25,7 +25,7 @@ def ask_copilot(req: CopilotRequest):
         features_df = state.get('features_df')
         
         total_customers = len(features_df) if features_df is not None else sum(p.get('customer_count', 0) for p in profiles)
-        total_revenue = sum(float(p.get('avg_order_value', 50.0)) * int(p.get('customer_count', 1)) for p in profiles)
+        total_revenue = sum(float(p.get('revenue', 0.0)) for p in profiles)
         
         normalized_segments = []
         for p in profiles:
@@ -34,9 +34,10 @@ def ask_copilot(req: CopilotRequest):
                 "name": p.get("segment_name", f"Segment {p.get('segment_id', 0)}"),
                 "segment_name": p.get("segment_name", f"Segment {p.get('segment_id', 0)}"),
                 "customer_count": p.get("customer_count", 0),
-                "revenue": float(p.get("avg_order_value", 50) * p.get("customer_count", 1)),
+                "revenue": float(p.get("revenue", 0.0)),
                 "avg_value": float(p.get("avg_value_score", p.get("avg_order_value", 0))),
                 "churn_risk": f"{p.get('avg_churn_risk', 0):.1f}%",
+                "churn_risk_value": float(p.get("avg_churn_risk", 0.0)),
                 "key_characteristics": p.get("key_characteristics", [])
             })
             
@@ -82,7 +83,8 @@ def generate_ai_campaign(req: CampaignGenRequest):
         
     try:
         generator = CampaignGenerator()
-        campaign = generator.generate_campaign(segment_profile, req.instructions)
+        action = next((a for a in (state.get('marketing_actions') or []) if a.get('segment_id') == req.segment_id), {})
+        campaign = generator.generate_campaign(segment_profile, action, req.instructions or '')
         return campaign
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -4,6 +4,25 @@
 
 A production-quality full-stack AI platform that analyzes real customer behavior across purchase history, engagement patterns, and product usage to automatically discover meaningful customer segments, generate behavioral scores, and produce specific marketing actions for every segment.
 
+## 🎬 Demo
+
+![BehaviorIQ dashboard](docs/screenshots/dashboard-light.png)
+
+A one-minute walkthrough is in [`docs/demo/BehaviorIQ_UI_demo.mp4`](docs/demo/BehaviorIQ_UI_demo.mp4): landing page, dashboard, command palette, segment explorer, rescue queue, customer profile and dark mode.
+
+| Landing | Dark mode |
+|---|---|
+| ![Landing page](docs/screenshots/landing-light.png) | ![Dashboard, dark](docs/screenshots/dashboard-dark.png) |
+| ![Command palette](docs/screenshots/command-palette.png) | ![Customer profile, dark](docs/screenshots/customer-dark.png) |
+
+### Interface highlights
+- **Light and dark themes** that follow your system setting and remember your choice.
+- **Ctrl/⌘ K command palette** to jump to any page, or straight to a customer by ID (e.g. `CUST-00042`).
+- **Sidebar grouped by workflow**: Prepare → Segment → Act → Measure.
+- **Dashboard** that leads with the finding (which segments bring in the revenue), with a segment table, churn risk and the next action for each segment.
+- **Live status and alert count** from the backend, with no placeholder numbers.
+- Works on phones (drawer navigation, no sideways scrolling), keyboard focus is visible, and reduced-motion settings are respected.
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -43,16 +62,16 @@ npm run dev
 ```
 
 ### 6. Open the App
-Visit **http://localhost:5173** → Click "Try Demo Data" on the landing page → The system generates 10,000 synthetic customers and runs the full ML pipeline automatically.
+Visit **http://localhost:5173** → Click "Try Demo Data" on the landing page → The system generates 1,500 synthetic customers and runs the full ML pipeline automatically (about 4 seconds).
 
 ---
 
 ## 📊 What This Platform Does
 
-1. **Data Ingestion**: Upload CSV/Excel or generate 10K realistic synthetic customers
-2. **Feature Engineering**: 30+ behavioral features auto-generated (RFM, engagement, purchase, loyalty, churn signals)
+1. **Data Ingestion**: Upload CSV/Excel or generate realistic synthetic customers
+2. **Feature Engineering**: 31 behavioral features auto-generated (RFM, engagement, purchase, loyalty, churn signals)
 3. **Behavior Scoring**: 7 individual scores + PCA-weighted composite per customer
-4. **Multi-Model Segmentation**: K-Means, Hierarchical, DBSCAN, GMM — all compared
+4. **Multi-Model Segmentation**: K-Means, Hierarchical, DBSCAN, GMM — all compared over 4–10 segments, skewed features log-transformed
 5. **Intelligent Naming**: Segments named from behavior (e.g., "High-Value Loyalists" not "Cluster 0")
 6. **Explainability**: Feature importance, radar charts, heatmaps, natural-language explanations
 7. **Marketing Actions**: Per-segment strategy, channel, offer, frequency, objective
@@ -86,12 +105,23 @@ behavioriq/
 │   └── utils/            # Helpers & exporters
 ├── frontend/             # React + TypeScript + Tailwind
 │   └── src/
-│       ├── pages/        # 18 pages
+│       ├── pages/        # 18 pages (landing + 16 app views + customer profile)
+│       ├── lib/          # navigation map, palette
 │       ├── components/   # Reusable UI components
 │       ├── services/     # API client
 │       └── stores/       # Zustand state
 └── data/                 # Datasets & exports
 ```
+
+## 🔬 Reproducing the research results
+
+```bash
+python -m experiments.run_experiments   # 5 seeds x 5 preprocessing variants x 4 algorithms (~2-3 min)
+python -m experiments.make_figures      # figures -> experiments/figures/
+python -m experiments.make_tables       # LaTeX tables -> experiments/tables/
+```
+
+The synthetic generator draws customers from 8 known behavioural archetypes, so segment quality is measured against ground truth (ARI / NMI), not only with internal indices. Headline results (mean over 5 seeds): log-transforming skewed features raises best ARI from 0.54–0.62 to 0.66–0.71; unconstrained silhouette selection picks 2–3 segments (ARI ≈ 0.2); restricting to 4–10 segments gives ARI 0.51 at ≈ 8 segments.
 
 ## 📄 Dataset Format
 
@@ -104,7 +134,7 @@ See the full dataset specification in the implementation plan for all supported 
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 18, TypeScript, Tailwind CSS, Recharts, Framer Motion |
+| Frontend | React 19, TypeScript, Tailwind CSS 4, Recharts, Framer Motion, Mona Sans |
 | Backend | Python, FastAPI, Pydantic |
 | ML | scikit-learn, pandas, numpy, scipy |
 | AI | Google Gemini API (optional, has rule-based fallback) |

@@ -60,6 +60,7 @@ class ClusterEvaluator:
         n_samples = X.shape[0]
         sample_size = int(0.8 * n_samples)
         ari_scores = []
+        rng = np.random.default_rng(42)  # reproducible bootstrap
 
         # Get full data labels
         full_labels = self._run_clustering(X, algorithm, k)
@@ -67,7 +68,7 @@ class ClusterEvaluator:
             return 0.0
 
         for _ in range(n_iterations):
-            indices = np.random.choice(n_samples, sample_size, replace=False)
+            indices = rng.choice(n_samples, sample_size, replace=False)
             X_sample = X[indices]
             
             sample_labels = self._run_clustering(X_sample, algorithm, k)
@@ -88,7 +89,7 @@ class ClusterEvaluator:
             model = AgglomerativeClustering(n_clusters=k, linkage='ward')
             return model.fit_predict(X)
         elif algorithm == 'gmm':
-            model = GaussianMixture(n_components=k, covariance_type='full', random_state=42)
+            model = GaussianMixture(n_components=k, covariance_type='diag', random_state=42)
             return model.fit_predict(X)
         return np.zeros(X.shape[0])
 

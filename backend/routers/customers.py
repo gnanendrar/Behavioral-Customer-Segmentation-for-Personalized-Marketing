@@ -130,17 +130,59 @@ def get_customer(customer_id: str):
         explanations = scoring_engine.explain_scores(customer_features) if hasattr(scoring_engine, 'explain_scores') else {}
         
         dna_engine = CustomerDNA()
-        dna = dna_engine.generate_dna(customer_features) if hasattr(dna_engine, 'generate_dna') else {}
+        dna = dna_engine.generate_dna(customer_id, customer_scores, customer_features)
         
-        # Mock behavioral changes
-        behavioral_changes = {
-            "spending_trend": "increasing",
-            "engagement_trend": "stable"
-        }
+        # Where this customer deviates from their own segment's typical behaviour.
+        # direction 'up' = unfavourable shift (shown in red), 'down' = favourable.
+        seg_mask = np.asarray(labels) == segment_id
+        seg_df = features_df.loc[seg_mask]
+        checks = [
+            ('recency_days', 'Days since last purchase', True),
+            ('purchase_frequency', 'Purchase frequency', False),
+            ('digital_engagement_score', 'Digital engagement', False),
+            ('cart_abandonment_rate', 'Cart abandonment rate', True),
+            ('discount_dependency', 'Discount dependency', True),
+            ('monetary_value', 'Total spend', False),
+        ]
+        behavioral_changes = []
+        for col, label, higher_is_worse in checks:
+            if col not in seg_df.columns:
+                continue
+            mu, sd = float(seg_df[col].mean()), float(seg_df[col].std() or 0)
+            val = float(customer_features.get(col, 0) or 0)
+            if sd == 0:
+                continue
+            z = (val - mu) / sd
+            if abs(z) < 1.0:
+                continue
+            higher = z > 0
+            behavioral_changes.append({
+                "feature": col,
+                "description": f"{label} is {'above' if higher else 'below'} the segment average "
+                               f"({val:,.2f} vs {mu:,.2f})",
+                "direction": 'up' if higher == higher_is_worse else 'down',
+                "zscore": round(z, 2),
+            })
+        behavioral_changes.sort(key=lambda c: abs(c['zscore']), reverse=True)
         
+        # The customer's recommended action is their segment's marketing action.
+        recommended_action = None
+        for action in state.get('marketing_actions') or []:
+            if action.get('segment_id') == segment_id:
+                channels = action.get('channel', [])
+                channels = ', '.join(channels) if isinstance(channels, list) else str(channels)
+                strategy = str(action.get('strategy', '')).replace('_', ' ').capitalize()
+                offer = str(action.get('offer', '')).replace('_', ' ')
+                recommended_action = (
+                    f"{strategy}: {offer} by {channels.replace('_', ' ')}, {action.get('frequency', '')}. "
+                    f"{action.get('rationale', '')}"
+                ).strip()
+                break
+
         return {
             "customer_id": customer_id,
             "segment_id": segment_id,
+            "recommended_action": recommended_action,
             "segment_name": segment_name,
             "features": customer_features,
             "scores": customer_scores,

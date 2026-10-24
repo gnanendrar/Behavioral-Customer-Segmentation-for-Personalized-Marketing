@@ -10,6 +10,10 @@ from backend.services.golden_hour import GoldenHourAnalyzer
 
 router = APIRouter()
 
+
+def _segment_names(state):
+    return {p['segment_id']: p.get('segment_name', f"Segment {p['segment_id']}") for p in (state.get('profiles') or [])}
+
 @router.get("/revenue-autopsy")
 def get_revenue_autopsy():
     state = get_state()
@@ -54,10 +58,19 @@ def get_cohorts():
         
     try:
         cohort_engine = CohortEngine()
+        cohort_dates = None
+        raw = state.get('raw_data')
+        if raw is not None and len(raw) == len(state['features_df']):
+            for col in ('signup_date', 'first_purchase_date', 'account_creation_date'):
+                if col in raw.columns:
+                    cohort_dates = raw[col]
+                    break
         results = cohort_engine.analyze_cohorts(
             features_df=state['features_df'],
             scores_df=state['scores_df'],
-            labels=state['labels']
+            labels=state['labels'],
+            cohort_dates=cohort_dates,
+            segment_names=_segment_names(state),
         )
         return results
     except Exception as e:
@@ -116,7 +129,8 @@ def get_tribes():
         results = mapper.build_network(
             features_df=state['features_df'],
             scores_df=state['scores_df'],
-            labels=state['labels']
+            labels=state['labels'],
+            segment_names=_segment_names(state),
         )
         return results
     except Exception as e:

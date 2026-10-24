@@ -7,7 +7,8 @@ class CohortEngine:
     Engine to group customers by cohorts and analyze performance metrics across them.
     """
 
-    def analyze_cohorts(self, features_df: pd.DataFrame, scores_df: pd.DataFrame, labels: np.ndarray) -> Dict[str, Any]:
+    def analyze_cohorts(self, features_df: pd.DataFrame, scores_df: pd.DataFrame, labels: np.ndarray,
+                        cohort_dates: pd.Series = None, segment_names: Dict[int, str] = None) -> Dict[str, Any]:
         """
         Group customers into cohorts and compute aggregated statistics.
         """
@@ -19,24 +20,32 @@ class CohortEngine:
         
         # Merge scores safely
         for col in ['value_score', 'engagement_score', 'churn_risk']:
-            if col in scores_df.columns:
-                df[col] = scores_df[col]
+            src = 'churn_risk_score' if col == 'churn_risk' else col
+            if src in scores_df.columns:
+                df[col] = scores_df[src]
             else:
                 df[col] = np.random.uniform(0, 100, len(df))
                 
         # Proxies for spending and orders
-        spend_cols = [c for c in features_df.columns if 'spend' in c.lower() or 'revenue' in c.lower()]
+        spend_cols = ['monetary_value'] if 'monetary_value' in features_df.columns else [c for c in features_df.columns if 'spend' in c.lower() or 'revenue' in c.lower()]
         df['spending'] = features_df[spend_cols[0]] if spend_cols else np.random.lognormal(4, 1, len(df))
         
-        order_cols = [c for c in features_df.columns if 'order' in c.lower() or 'count' in c.lower()]
-        df['order_count'] = features_df[order_cols[0]] if order_cols else np.random.poisson(3, len(df))
+        if 'monetary_value' in features_df.columns and 'avg_order_value' in features_df.columns:
+            aov = features_df['avg_order_value'].replace(0, np.nan)
+            df['order_count'] = (features_df['monetary_value'] / aov).fillna(0).round()
+        else:
+            order_cols = [c for c in features_df.columns if 'order' in c.lower() or 'count' in c.lower()]
+            df['order_count'] = features_df[order_cols[0]] if order_cols else np.random.poisson(3, len(df))
         
-        recency_cols = [c for c in features_df.columns if 'recency' in c.lower() or 'days' in c.lower()]
+        recency_cols = ['recency_days'] if 'recency_days' in features_df.columns else [c for c in features_df.columns if 'recency' in c.lower()]
         df['recency'] = features_df[recency_cols[0]] if recency_cols else np.random.uniform(0, 365, len(df))
 
         # Look for a date column to act as cohort, else fake it
-        date_cols = [c for c in features_df.columns if 'date' in c.lower() or 'time' in c.lower()]
-        if date_cols:
+        date_cols = [c for c in features_df.columns if 'date' in c.lower()]
+        if cohort_dates is not None and len(cohort_dates) == len(df):
+            dates = pd.to_datetime(pd.Series(np.asarray(cohort_dates), index=df.index), errors='coerce')
+            df['cohort_name'] = dates.dt.to_period('Q').astype(str).replace('NaT', 'Unknown')
+        elif date_cols:
             try:
                 dates = pd.to_datetime(features_df[date_cols[0]])
                 df['cohort_name'] = dates.dt.to_period('Q').astype(str)
@@ -53,7 +62,7 @@ class CohortEngine:
                 continue
                 
             seg_dist = (group['segment_id'].value_counts(normalize=True) * 100).to_dict()
-            seg_dist_str = {f"Segment {int(k)}": float(v) for k, v in seg_dist.items()}
+            seg_dist_str = {(segment_names or {}).get(int(k), f"Segment {int(k)}"): float(v) for k, v in seg_dist.items()}
             
             retention_proxy = float((group['recency'] < 90).mean() * 100)
             

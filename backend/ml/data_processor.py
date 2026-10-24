@@ -104,9 +104,16 @@ class DataProcessor:
             "completeness_score": round(completeness_score, 2)
         }
 
-    def clean_data(self, df: pd.DataFrame, column_mapping: Dict[str, str]) -> pd.DataFrame:
+    def clean_data(self, df: pd.DataFrame, column_mapping: Dict[str, str],
+                   cap_outliers: bool = False, scale: bool = False, encode: bool = False) -> pd.DataFrame:
         """
-        Clean the data: apply mapping, handle missing values, duplicates, outliers, scale, and encode.
+        Clean the data: apply mapping, handle missing values and duplicates.
+
+        Values are kept in their original units by default. Feature engineering
+        computes ratios (spend per order, clicks per open, ...) and revenue
+        analytics sum monetary values, so both need real units; the clustering
+        engine standardises its own input matrix. Outlier capping, scaling and
+        categorical encoding remain available as opt-in steps.
         """
         df_clean = df.copy()
         
@@ -136,8 +143,8 @@ class DataProcessor:
                 else:
                     df_clean[col] = df_clean[col].fillna("Unknown")
                     
-        # Cap outliers using IQR (1.5x)
-        for col in numerical_cols:
+        # Cap outliers using IQR (1.5x) — opt-in
+        for col in (numerical_cols if cap_outliers else []):
             if col != 'customer_id' and not str(col).endswith('_id') and df_clean[col].nunique() > 2:
                 Q1 = df_clean[col].quantile(0.25)
                 Q3 = df_clean[col].quantile(0.75)
@@ -148,11 +155,11 @@ class DataProcessor:
                 
         # Normalize numerical columns
         cols_to_scale = [col for col in numerical_cols if col not in ['customer_id'] and not str(col).endswith('_id')]
-        if cols_to_scale:
+        if scale and cols_to_scale:
             df_clean[cols_to_scale] = self.scaler.fit_transform(df_clean[cols_to_scale])
-            
-        # Encode categoricals
-        for col in categorical_cols:
+
+        # Encode categoricals — opt-in
+        for col in (categorical_cols if encode else []):
             if col != 'customer_id':
                 df_clean[col] = df_clean[col].astype(str)
                 df_clean[col] = pd.Categorical(df_clean[col]).codes

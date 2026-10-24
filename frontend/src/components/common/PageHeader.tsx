@@ -10,18 +10,14 @@ interface PageHeaderProps {
 export function PageHeader({ title, subtitle, description, action }: PageHeaderProps) {
   const sub = subtitle || description;
   return (
-    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">{title}</h1>
-        {sub && (
-          <p className="mt-1 text-sm text-gray-500">{sub}</p>
-        )}
+    <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="max-w-2xl">
+        <h2 className="text-[28px] font-bold leading-[1.1] text-gray-900 sm:text-[32px]" style={{ fontStretch: '118%', letterSpacing: '-0.025em' }}>
+          {title}
+        </h2>
+        {sub && <p className="mt-2 text-[15px] leading-relaxed text-gray-500">{sub}</p>}
       </div>
-      {action && (
-        <div className="flex items-center gap-3">
-          {action}
-        </div>
-      )}
+      {action && <div className="flex shrink-0 items-center gap-3">{action}</div>}
     </div>
   );
 }
