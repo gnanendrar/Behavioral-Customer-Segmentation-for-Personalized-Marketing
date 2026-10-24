@@ -43,16 +43,16 @@ npm run dev
 ```
 
 ### 6. Open the App
-Visit **http://localhost:5173** → Click "Try Demo Data" on the landing page → The system generates 10,000 synthetic customers and runs the full ML pipeline automatically.
+Visit **http://localhost:5173** → Click "Try Demo Data" on the landing page → The system generates 1,500 synthetic customers and runs the full ML pipeline automatically (about 4 seconds).
 
 ---
 
 ## 📊 What This Platform Does
 
-1. **Data Ingestion**: Upload CSV/Excel or generate 10K realistic synthetic customers
-2. **Feature Engineering**: 30+ behavioral features auto-generated (RFM, engagement, purchase, loyalty, churn signals)
+1. **Data Ingestion**: Upload CSV/Excel or generate realistic synthetic customers
+2. **Feature Engineering**: 31 behavioral features auto-generated (RFM, engagement, purchase, loyalty, churn signals)
 3. **Behavior Scoring**: 7 individual scores + PCA-weighted composite per customer
-4. **Multi-Model Segmentation**: K-Means, Hierarchical, DBSCAN, GMM — all compared
+4. **Multi-Model Segmentation**: K-Means, Hierarchical, DBSCAN, GMM — all compared over 4–10 segments, skewed features log-transformed
 5. **Intelligent Naming**: Segments named from behavior (e.g., "High-Value Loyalists" not "Cluster 0")
 6. **Explainability**: Feature importance, radar charts, heatmaps, natural-language explanations
 7. **Marketing Actions**: Per-segment strategy, channel, offer, frequency, objective
@@ -92,6 +92,16 @@ behavioriq/
 │       └── stores/       # Zustand state
 └── data/                 # Datasets & exports
 ```
+
+## 🔬 Reproducing the research results
+
+```bash
+python -m experiments.run_experiments   # 5 seeds x 5 preprocessing variants x 4 algorithms (~2-3 min)
+python -m experiments.make_figures      # figures -> experiments/figures/
+python -m experiments.make_tables       # LaTeX tables -> experiments/tables/
+```
+
+The synthetic generator draws customers from 8 known behavioural archetypes, so segment quality is measured against ground truth (ARI / NMI), not only with internal indices. Headline results (mean over 5 seeds): log-transforming skewed features raises best ARI from 0.54–0.62 to 0.66–0.71; unconstrained silhouette selection picks 2–3 segments (ARI ≈ 0.2); restricting to 4–10 segments gives ARI 0.51 at ≈ 8 segments.
 
 ## 📄 Dataset Format
 
