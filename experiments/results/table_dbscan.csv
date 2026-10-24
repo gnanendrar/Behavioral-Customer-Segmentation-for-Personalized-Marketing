@@ -1,0 +1,6 @@
+variant,k,ari,noise
+V0 Legacy (pre-scaled),1.733,0.038,0.058
+V1 Raw units + z-score,1.467,-0.001,0.031
+V2 V1 + log1p(skewed),5.867,0.018,0.06
+V3 V2 + PCA(95%),4.267,0.016,0.045
+V4 Raw units + quantile-normal,19.133,0.072,0.141

@@ -3,7 +3,7 @@ import numpy as np
 import random
 import os
 
-def generate_synthetic_dataset(n_customers: int = 1500, seed: int = 42) -> pd.DataFrame:
+def generate_synthetic_dataset(n_customers: int = 1500, seed: int = 42, include_archetype: bool = False) -> pd.DataFrame:
     """
     Generates a realistic synthetic customer dataset based on 8 behavioral archetypes.
     """
@@ -170,6 +170,9 @@ def generate_synthetic_dataset(n_customers: int = 1500, seed: int = 42) -> pd.Da
             'last_email_date': last_email_date.date(),
             'preferred_channel': np.random.choice(preferred_channels)
         }
+        if include_archetype:
+            # ground-truth generating archetype, for evaluation only (never a model input)
+            row['archetype'] = arch
         data.append(row)
         
     df = pd.DataFrame(data)

@@ -1,0 +1,53 @@
+{
+  "algorithm": "kmeans",
+  "k": 9,
+  "silhouette": 0.22710711617076434,
+  "davies_bouldin": 1.336864470065327,
+  "calinski_harabasz": 327.26549156160837,
+  "stability": 0.917953982372421,
+  "ari": 0.5484776619216942,
+  "nmi": 0.7116100786048595,
+  "n_features": 31,
+  "timing_s": {
+    "clean": 0.039,
+    "features": 0.032,
+    "scoring": 0.028,
+    "clustering": 4.013,
+    "profiling": 0.013,
+    "actions": 0.0,
+    "total": 4.125
+  },
+  "configs_evaluated": 24,
+  "scalability": [
+    {
+      "n_customers": 1500,
+      "clean": 0.04,
+      "features": 0.03,
+      "scoring": 0.02,
+      "clustering": 4.08,
+      "profiling": 0.01,
+      "actions": 0.0,
+      "total": 4.17
+    },
+    {
+      "n_customers": 5000,
+      "clean": 0.08,
+      "features": 0.07,
+      "scoring": 0.03,
+      "clustering": 5.65,
+      "profiling": 0.01,
+      "actions": 0.0,
+      "total": 5.84
+    },
+    {
+      "n_customers": 10000,
+      "clean": 0.09,
+      "features": 0.07,
+      "scoring": 0.03,
+      "clustering": 10.83,
+      "profiling": 0.02,
+      "actions": 0.0,
+      "total": 11.04
+    }
+  ]
+}

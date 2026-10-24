@@ -1,0 +1,10 @@
+segment,customers,share_pct,revenue_share_pct,value,engagement,loyalty,churn_risk,discount_sens,strategy,channels,offer,frequency
+High-Value Loyalists,336,22.4,44.9,76,81,77,19,65,upselling,email,premium_membership,monthly
+At-Risk VIP Customers,162,10.8,31.7,88,41,77,70,55,retention,"email, push",loyalty_rewards,biweekly
+Promotion-Driven Buyers,327,21.8,15.9,56,41,45,59,76,retention,email,standard_newsletter,weekly
+Low-Value Occasional Shoppers (Higher Discount Use),206,13.7,2.8,22,64,35,34,50,strategic_discounting,"email, sms",personalized_discount,weekly
+Dormant Customers (Value Tier 2),173,11.5,2.6,34,18,45,88,16,reactivation,"email, sms, paid_ads",big_discount,monthly
+Dormant Customers (Value Tier 1),75,5.0,1.1,37,5,33,94,16,reactivation,"email, sms, paid_ads",big_discount,monthly
+Low-Value Occasional Shoppers (Lower Discount Use),102,6.8,0.6,24,41,4,44,16,strategic_discounting,"email, sms",personalized_discount,weekly
+Engaged Low-Spenders,81,5.4,0.5,17,85,43,13,32,retention,email,standard_newsletter,weekly
+Dormant Customers (Value Tier 3),38,2.5,0.0,2,2,12,93,16,reactivation,"email, sms, paid_ads",big_discount,monthly

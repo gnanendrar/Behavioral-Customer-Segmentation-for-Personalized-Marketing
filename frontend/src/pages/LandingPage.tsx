@@ -52,7 +52,6 @@ const LandingPage = () => {
     <div className="min-h-screen bg-slate-50 font-sans">
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 text-white">
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-32 relative z-10">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}

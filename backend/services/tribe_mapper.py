@@ -11,7 +11,7 @@ class TribeMapper:
     def __init__(self):
         pass
         
-    def build_network(self, features_df: pd.DataFrame, scores_df: pd.DataFrame, labels: np.ndarray, max_nodes: int = 500) -> Dict[str, Any]:
+    def build_network(self, features_df: pd.DataFrame, scores_df: pd.DataFrame, labels: np.ndarray, max_nodes: int = 500, segment_names=None) -> Dict[str, Any]:
         """
         Builds a network graph of behaviorally similar customers.
         """
@@ -89,7 +89,7 @@ class TribeMapper:
                 "id": str(i),
                 "customer_id": str(cust_i['customer_id']),
                 "segment_id": int(cust_i['cluster_label']),
-                "segment_name": f"Segment {cust_i['cluster_label']}",
+                "segment_name": (segment_names or {}).get(int(cust_i['cluster_label']), f"Segment {cust_i['cluster_label']}"),
                 "value_score": float(val_score),
                 "engagement_score": float(eng_score),
                 "x": random.uniform(0, 100),

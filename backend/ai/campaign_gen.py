@@ -76,7 +76,7 @@ Return the campaign as a JSON object matching this exact schema:
     def _generate_with_templates(self, segment_profile: Dict[str, Any], marketing_action: Dict[str, Any]) -> Dict[str, Any]:
         """Rule-based fallback for campaign generation when LLM is unavailable."""
         action_type = marketing_action.get('type', 'retention').lower()
-        segment_name = segment_profile.get('name', 'Valued Customers')
+        segment_name = segment_profile.get('segment_name', segment_profile.get('name', 'Valued Customers'))
         customer_count = segment_profile.get('customer_count', 1000)
         
         # Base template structure

@@ -101,13 +101,13 @@ const Dashboard = () => {
 
   // Calculate KPIs
   const totalCustomers = segments.reduce((sum, s) => sum + (s.customer_count || 0), 0);
-  const totalRevenue = segments.reduce((sum, s) => sum + (s.revenue_contribution || (s.avg_order_value ? s.avg_order_value * s.customer_count : 0)), 0);
+  const totalRevenue = segments.reduce((sum, s) => sum + (s.revenue ?? 0), 0);
   const avgCustomerValue = totalCustomers > 0 ? totalRevenue / totalCustomers : 0;
   
   const pieData = segments.map(s => ({ name: s.segment_name, value: s.customer_count || 0 }));
   const revenueData = segments.map(s => ({ 
     name: s.segment_name, 
-    revenue: s.revenue_contribution || (s.avg_order_value ? s.avg_order_value * s.customer_count : 0)
+    revenue: s.revenue ?? 0
   })).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
 
   const radarData = segments.slice(0, 3).map(s => ({
@@ -135,9 +135,9 @@ const Dashboard = () => {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Customers" value={totalCustomers.toLocaleString()} icon={<Users />} trend="+12%" trendUp={true} />
-        <StatCard title="Total Revenue" value={`$${(totalRevenue/1000).toFixed(1)}k`} icon={<DollarSign />} trend="+8%" trendUp={true} />
-        <StatCard title="Avg Customer Value" value={`$${avgCustomerValue.toFixed(2)}`} icon={<Award />} />
+        <StatCard title="Total Customers" value={totalCustomers.toLocaleString()} icon={<Users />} />
+        <StatCard title="Total Revenue" value={totalRevenue >= 1e6 ? `$${(totalRevenue/1e6).toFixed(2)}M` : `$${(totalRevenue/1000).toFixed(1)}k`} icon={<DollarSign />} />
+        <StatCard title="Avg Customer Value" value={`$${avgCustomerValue.toLocaleString(undefined, {maximumFractionDigits: 0})}`} icon={<Award />} />
         <StatCard title="Segments Identified" value={segments.length.toString()} icon={<Target />} />
       </div>
 

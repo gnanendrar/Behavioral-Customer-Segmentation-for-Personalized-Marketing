@@ -5,6 +5,7 @@ export interface SegmentProfile {
   customer_count: number;
   percentage: number;
   revenue_contribution: number;
+  revenue?: number;
   avg_value_score: number;
   avg_engagement_score: number;
   avg_loyalty_score: number;

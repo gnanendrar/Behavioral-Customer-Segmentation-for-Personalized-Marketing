@@ -35,7 +35,9 @@ def export_customers_csv():
         
     try:
         exporter = DataExporter()
-        filepath = exporter.export_customers_csv(state['features_df'], state['labels'], state.get('scores_df'))
+        filepath = exporter.export_customers_csv(
+            state['features_df'], state.get('scores_df'), state['labels'], state.get('profiles') or []
+        )
         
         if not os.path.exists(filepath):
             raise HTTPException(status_code=404, detail="File not found after generation")
@@ -56,7 +58,15 @@ def export_report_pdf():
         
     try:
         exporter = DataExporter()
-        filepath = exporter.export_report_pdf(state)
+        profiles = state['profiles'] or []
+        features_df = state.get('features_df')
+        total_revenue = float(features_df['monetary_value'].sum()) if features_df is not None and 'monetary_value' in features_df else 0.0
+        overall_stats = {
+            'total_customers': len(features_df) if features_df is not None else 0,
+            'total_segments': len(profiles),
+            'total_revenue': total_revenue,
+        }
+        filepath = exporter.export_report_pdf(profiles, state.get('marketing_actions') or [], overall_stats)
         
         if not os.path.exists(filepath):
             raise HTTPException(status_code=404, detail="File not found after generation")

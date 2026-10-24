@@ -15,7 +15,8 @@ class SegmentProfiler:
         df['segment_label'] = labels
         
         total_customers = len(df)
-        total_revenue = df['total_spending'].sum() if 'total_spending' in df.columns else 1.0
+        revenue_col = 'monetary_value' if 'monetary_value' in df.columns else ('total_spending' if 'total_spending' in df.columns else None)
+        total_revenue = df[revenue_col].sum() if revenue_col else 1.0
         if total_revenue == 0:
             total_revenue = 1.0
             
@@ -34,7 +35,7 @@ class SegmentProfiler:
             customer_count = len(segment_df)
             percentage = (customer_count / total_customers) * 100
             
-            segment_revenue = segment_df['total_spending'].sum() if 'total_spending' in df.columns else 0.0
+            segment_revenue = segment_df[revenue_col].sum() if revenue_col else 0.0
             revenue_contribution = (segment_revenue / total_revenue) * 100 if total_revenue > 0 else 0.0
             
             feature_means = segment_df[numeric_cols].mean()
@@ -77,10 +78,46 @@ class SegmentProfiler:
                 'behavioral_summary': self.get_behavioral_summary(feature_zscores, segment_name)
             }
             
+            profile['revenue'] = float(segment_revenue)
             profiles.append(profile)
-            
+
+        self._make_names_unique(profiles)
         self.profiles = profiles
         return profiles
+
+    def _make_names_unique(self, profiles: List[Dict[str, Any]]) -> None:
+        """Rule-based naming can map two clusters to the same archetype, and clusters
+        matching no rule get a generic name. Give every segment a distinct, descriptive name."""
+        for p in profiles:
+            if p['segment_name'].startswith('Behavioral Segment'):
+                # describe the cluster by its value / engagement / risk position (scores are 0-100 percentiles)
+                v, e, c = p.get('avg_value_score', 50), p.get('avg_engagement_score', 50), p.get('avg_churn_risk', 50)
+                value = 'High-Value' if v >= 65 else ('Mid-Value' if v >= 35 else 'Low-Value')
+                eng = 'Highly Engaged' if e >= 65 else ('Occasional' if e >= 35 else 'Passive')
+                risk = 'At-Risk ' if c >= 65 else ''
+                p['segment_name'] = f"{risk}{value} {eng} Shoppers"
+
+        by_name: Dict[str, List[Dict[str, Any]]] = {}
+        for p in profiles:
+            by_name.setdefault(p['segment_name'], []).append(p)
+        for name, group in by_name.items():
+            if len(group) < 2:
+                continue
+            # suffix by the score dimension that separates the duplicates most
+            dims = [('avg_value_score', 'Value'), ('avg_engagement_score', 'Engagement'),
+                    ('avg_loyalty_score', 'Loyalty'), ('avg_churn_risk', 'Churn Risk'),
+                    ('avg_discount_sensitivity', 'Discount Use')]
+            spread = {d: max(p.get(d, 0) for p in group) - min(p.get(d, 0) for p in group) for d, _ in dims}
+            key, label = max(dims, key=lambda d: spread[d[0]])
+            group.sort(key=lambda p: p.get(key, 0), reverse=True)
+            if len(group) == 2:
+                tiers = [f'Higher {label}', f'Lower {label}']
+            else:
+                tiers = [f'{label} Tier {i + 1}' for i in range(len(group))]
+            for p, tier in zip(group, tiers):
+                p['segment_name'] = f"{name} ({tier})"
+        for p in profiles:
+            p['behavioral_summary'] = self.get_behavioral_summary(p.get('feature_zscores', {}), p['segment_name'])
 
     def _generate_segment_name(self, zscores: Dict[str, float], label: int) -> str:
         """

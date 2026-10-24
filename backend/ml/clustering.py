@@ -8,6 +8,7 @@ from sklearn.neighbors import NearestNeighbors
 from typing import Optional, List, Dict, Any
 
 from backend.ml.evaluation import ClusterEvaluator
+from backend.config import settings
 
 class ClusteringEngine:
     def __init__(self):
@@ -36,7 +37,14 @@ class ClusteringEngine:
 
         # 2. Handle NaN/inf
         X_df = X_df.replace([np.inf, -np.inf], np.nan).fillna(0)
+        # drop constant columns, then log-compress heavy-tailed non-negative features
+        # (spend, frequencies, ratios). Experiments: ARI vs ground truth 0.60 -> 0.71.
+        X_df = X_df.loc[:, X_df.std() > 0]
+        for c in X_df.columns:
+            if X_df[c].min() >= 0 and abs(X_df[c].skew()) > 1.0:
+                X_df[c] = np.log1p(X_df[c])
         X = X_df.values
+        self.feature_names = list(X_df.columns)
         
         if X.shape[0] < 2:
             return {"error": "Not enough samples to cluster"}
@@ -76,24 +84,38 @@ class ClusteringEngine:
             # 8. Store best labels
             algo_key = f"{self.best_algorithm}_{self.best_k}" if self.best_k != -1 else self.best_algorithm
             if self.best_algorithm == 'dbscan':
-                best_dbscan = max([c for c in self.all_configs if c['algorithm'] == 'dbscan'], key=lambda x: x.get('composite_score', 0), default=None)
-                if best_dbscan:
-                    algo_key = f"dbscan_eps{best_dbscan.get('eps', 'auto')}_ms{best_dbscan.get('min_samples', 5)}"
+                # use the eps/min_samples of the top-ranked DBSCAN config itself
+                algo_key = f"dbscan_eps{best.get('eps')}_ms{int(best.get('min_samples', 5))}"
                     
             self.labels = self.results.get(algo_key, {}).get('labels', np.zeros(X.shape[0]))
         else:
             self.labels = np.zeros(X.shape[0])
 
         # 9. Return comprehensive results
+        best_cfg = ranked_configs[0] if ranked_configs else {}
         return {
+            'algorithm': self.best_algorithm,
+            'k': self.best_k,
+            'n_clusters': self.best_k,
+            'silhouette_score': best_cfg.get('silhouette'),
+            'davies_bouldin_score': best_cfg.get('davies_bouldin'),
+            'calinski_harabasz_score': best_cfg.get('calinski_harabasz'),
+            'stability': best_cfg.get('stability'),
+            'feature_count': int(X.shape[1]),
             'best_algorithm': self.best_algorithm,
             'best_k': self.best_k,
             'ranked_configurations': ranked_configs,
             'results_summary': {k: {'n_clusters': len(set(v['labels']) - {-1})} for k, v in self.results.items()}
         }
 
+    @property
+    def k_range(self):
+        # Actionability constraint: segments a marketing team can act on.
+        # Unconstrained internal indices collapse to k=2-3 (see experiments/).
+        return range(settings.MIN_CLUSTERS, settings.MAX_CLUSTERS + 1)
+
     def _run_kmeans(self, X: np.ndarray):
-        for k in range(2, 11):
+        for k in self.k_range:
             if k >= X.shape[0]:
                 continue
             model = KMeans(n_clusters=k, init='k-means++', n_init=10, random_state=42)
@@ -112,7 +134,7 @@ class ClusteringEngine:
             })
 
     def _run_agglomerative(self, X: np.ndarray):
-        for k in range(2, 11):
+        for k in self.k_range:
             if k >= X.shape[0]:
                 continue
             model = AgglomerativeClustering(n_clusters=k, linkage='ward')
@@ -159,7 +181,7 @@ class ClusteringEngine:
             labels = model.fit_predict(X)
             n_clusters = len(set(labels) - {-1})
             
-            if 3 <= n_clusters <= 10:
+            if settings.MIN_CLUSTERS <= n_clusters <= settings.MAX_CLUSTERS:
                 metrics = self.evaluator.evaluate(X, labels)
                 stability = 0.5 
                 
@@ -177,7 +199,7 @@ class ClusteringEngine:
                 })
 
     def _run_gmm(self, X: np.ndarray):
-        for k in range(2, 11):
+        for k in self.k_range:
             if k >= X.shape[0]:
                 continue
             model = GaussianMixture(n_components=k, covariance_type='diag', random_state=42)

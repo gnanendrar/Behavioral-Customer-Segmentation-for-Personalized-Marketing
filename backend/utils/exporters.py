@@ -49,7 +49,7 @@ class DataExporter:
             df[col] = scores_df[col]
             
         # Map segment names
-        segment_map = {p.get('segment_id', i): p.get('name', f"Segment {i}") for i, p in enumerate(profiles)}
+        segment_map = {p.get('segment_id', i): p.get('segment_name', p.get('name', f"Segment {i}")) for i, p in enumerate(profiles)}
         df['segment_name'] = df['segment_id'].map(segment_map)
         
         df.to_csv(out_path, index=False)
@@ -95,13 +95,15 @@ class DataExporter:
         elements.append(Paragraph("Segment Overview", h2_style))
         elements.append(Spacer(1, 6))
         
-        table_data = [["Segment ID", "Name", "Size", "Avg Value"]]
+        table_data = [["ID", "Segment", "Customers", "Share", "Revenue share", "Churn risk"]]
         for p in profiles:
             table_data.append([
                 str(p.get('segment_id', '')),
-                str(p.get('name', '')),
-                str(p.get('size', '')),
-                f"${p.get('avg_value', 0.0):,.2f}"
+                str(p.get('segment_name', p.get('name', ''))),
+                str(p.get('customer_count', p.get('size', ''))),
+                f"{p.get('percentage', 0.0):.1f}%",
+                f"{p.get('revenue_contribution', 0.0):.1f}%",
+                f"{p.get('avg_churn_risk', 0.0):.0f}/100",
             ])
             
         t = Table(table_data)
@@ -121,12 +123,15 @@ class DataExporter:
         elements.append(Paragraph("Marketing Recommendations", h2_style))
         elements.append(Spacer(1, 6))
         
-        rec_data = [["Segment", "Action", "Expected Lift"]]
+        rec_data = [["Segment", "Strategy", "Channels", "Offer", "Frequency"]]
         for a in actions:
+            ch = a.get('channel', '')
             rec_data.append([
                 str(a.get('segment_name', '')),
-                str(a.get('action', '')),
-                str(a.get('expected_lift', ''))
+                str(a.get('strategy', a.get('action', ''))).replace('_', ' '),
+                ', '.join(ch) if isinstance(ch, list) else str(ch),
+                str(a.get('offer', '')).replace('_', ' '),
+                str(a.get('frequency', '')),
             ])
             
         t2 = Table(rec_data)

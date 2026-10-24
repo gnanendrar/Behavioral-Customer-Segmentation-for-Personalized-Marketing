@@ -110,7 +110,7 @@ export default function Segmentation() {
               <BarChart data={comparison} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="algorithm" tick={{ fontSize: 12, fill: '#64748B' }} />
-                <YAxis domain={['auto', 'auto']} tick={{ fontSize: 11, fill: '#64748B' }} />
+                <YAxis domain={[0, 'auto']} tick={{ fontSize: 11, fill: '#64748B' }} />
                 <RechartsTooltip content={<ModernChartTooltip />} />
                 <Bar dataKey="silhouette_score" fill="#6366F1" radius={[6, 6, 0, 0]} name="Silhouette Score" />
               </BarChart>
