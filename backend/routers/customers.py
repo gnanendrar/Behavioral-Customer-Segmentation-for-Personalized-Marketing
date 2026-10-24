@@ -165,9 +165,24 @@ def get_customer(customer_id: str):
             })
         behavioral_changes.sort(key=lambda c: abs(c['zscore']), reverse=True)
         
+        # The customer's recommended action is their segment's marketing action.
+        recommended_action = None
+        for action in state.get('marketing_actions') or []:
+            if action.get('segment_id') == segment_id:
+                channels = action.get('channel', [])
+                channels = ', '.join(channels) if isinstance(channels, list) else str(channels)
+                strategy = str(action.get('strategy', '')).replace('_', ' ').capitalize()
+                offer = str(action.get('offer', '')).replace('_', ' ')
+                recommended_action = (
+                    f"{strategy}: {offer} by {channels.replace('_', ' ')}, {action.get('frequency', '')}. "
+                    f"{action.get('rationale', '')}"
+                ).strip()
+                break
+
         return {
             "customer_id": customer_id,
             "segment_id": segment_id,
+            "recommended_action": recommended_action,
             "segment_name": segment_name,
             "features": customer_features,
             "scores": customer_scores,

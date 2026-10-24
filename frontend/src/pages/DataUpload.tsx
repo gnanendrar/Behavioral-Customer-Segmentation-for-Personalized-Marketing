@@ -175,10 +175,10 @@ const DataUpload = () => {
           <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
             <h3 className="text-sm font-semibold text-slate-800 mb-3">Required Columns</h3>
             <ul className="text-sm text-slate-600 space-y-2">
-              <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Customer ID (string/int)</li>
-              <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Date/Timestamp (datetime)</li>
-              <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Event/Action Type (string)</li>
-              <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Value/Amount (numeric, optional)</li>
+              <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Customer ID</li>
+              <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Total spending</li>
+              <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Order count</li>
+              <li className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Last purchase date</li>
             </ul>
           </div>
         </div>

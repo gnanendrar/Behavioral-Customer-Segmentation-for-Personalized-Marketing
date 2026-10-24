@@ -1,10 +1,16 @@
 import { Download, FileText, Database, Layers, CheckCircle } from 'lucide-react';
 import PageHeader from '../components/common/PageHeader';
-import { useAppStore } from '../stores/appStore';
+import { useEffect, useState } from 'react';
+import { getAppStatus } from '../services/api';
 import { exportSegmentsCSV, exportCustomersCSV, exportReportPDF } from '../services/api';
 
 const Reports = () => {
-  const { customers = [], segments = [], lastUpdated } = useAppStore();
+  const [snapshot, setSnapshot] = useState<{ customers: number; segments: number; file: string | null } | null>(null);
+  useEffect(() => {
+    getAppStatus()
+      .then((s) => setSnapshot({ customers: s.total_customers || 0, segments: s.total_segments || 0, file: s.uploaded_filename }))
+      .catch(() => setSnapshot(null));
+  }, []);
 
   const cards = [
     {
@@ -42,11 +48,11 @@ const Reports = () => {
 
       <div className="bg-white rounded-lg shadow border border-gray-100 p-6 mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Current Analysis Snapshot</h3>
+          <h3 className="text-[14px] font-medium text-gray-500">Current analysis</h3>
           <div className="mt-2 flex items-center space-x-6 text-sm text-gray-900">
-            <div className="flex items-center"><Layers className="w-4 h-4 mr-2 text-indigo-500" /> <b>{segments?.length || 0}</b> &nbsp;Segments</div>
-            <div className="flex items-center"><Database className="w-4 h-4 mr-2 text-green-500" /> <b>{(customers?.length || 0).toLocaleString()}</b> &nbsp;Customers</div>
-            <div className="flex items-center text-gray-500">Last run: {lastUpdated ? new Date(lastUpdated).toLocaleString() : 'N/A'}</div>
+            <div className="flex items-center"><Layers className="w-4 h-4 mr-2 text-indigo-500" /> <b className="tnum">{snapshot?.segments ?? 0}</b> &nbsp;segments</div>
+            <div className="flex items-center"><Database className="w-4 h-4 mr-2 text-green-500" /> <b className="tnum">{(snapshot?.customers ?? 0).toLocaleString()}</b> &nbsp;customers</div>
+            <div className="flex items-center text-gray-500">Source: {snapshot?.file ?? 'none loaded'}</div>
           </div>
         </div>
       </div>
