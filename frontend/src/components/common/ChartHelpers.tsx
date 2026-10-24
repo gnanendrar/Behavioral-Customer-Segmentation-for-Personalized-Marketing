@@ -34,7 +34,7 @@ export const TruncatedXAxisTick: React.FC<TruncatedTickProps> = ({
         y={dy}
         transform={`rotate(${angle})`}
         textAnchor={textAnchor}
-        fill="#64748B"
+        style={{ fill: "var(--g-500)" }}
         fontSize={fontSize}
         fontWeight={500}
       >
@@ -63,7 +63,7 @@ export const TruncatedYAxisTick: React.FC<TruncatedTickProps> = ({
         x={dx}
         y={dy}
         textAnchor="end"
-        fill="#475569"
+        style={{ fill: "var(--g-600)" }}
         fontSize={fontSize}
         fontWeight={500}
       >
@@ -93,11 +93,11 @@ export const ModernChartTooltip: React.FC<ModernTooltipProps> = ({
   if (!active || !payload || !payload.length) return null;
 
   return (
-    <div className="bg-slate-900/95 text-white backdrop-blur-md px-3.5 py-2.5 rounded-xl shadow-2xl border border-slate-700/60 text-xs z-50 pointer-events-none min-w-[140px]">
-      {label && <p className="font-semibold text-slate-200 border-b border-slate-800 pb-1.5 mb-2">{label}</p>}
+    <div className="bg-gray-900 text-white px-3.5 py-2.5 rounded-lg shadow-lg text-[12.5px] z-50 pointer-events-none min-w-[140px]">
+      {label && <p className="font-semibold text-white/90 border-b border-white/15 pb-1.5 mb-2">{label}</p>}
       <div className="space-y-1.5">
         {payload.map((entry: any, index: number) => {
-          const color = entry.color || entry.fill || '#6366F1';
+          const color = entry.color || entry.fill || '#2E44D1';
           const name = entry.name || entry.dataKey;
           const rawVal = entry.value;
           let formatted = typeof rawVal === 'number' ? rawVal.toLocaleString() : String(rawVal ?? '');
@@ -109,9 +109,9 @@ export const ModernChartTooltip: React.FC<ModernTooltipProps> = ({
             <div key={index} className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-                <span className="text-slate-400 font-medium">{name}:</span>
+                <span className="text-white/60">{name}:</span>
               </div>
-              <span className="font-bold text-white">
+              <span className="font-semibold text-white tnum">
                 {valuePrefix}{formatted}{valueSuffix}
               </span>
             </div>

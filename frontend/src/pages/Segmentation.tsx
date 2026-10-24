@@ -9,7 +9,7 @@ import { getModelEvaluation, getModelComparison, getSegments } from '../services
 import PageHeader from '../components/common/PageHeader';
 import { ModernChartTooltip } from '../components/common/ChartHelpers';
 
-const COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#EF4444', '#F59E0B', '#10B981', '#06B6D4', '#3B82F6', '#14B8A6', '#A855F7'];
+const COLORS = ['#2E44D1', '#7A55DB', '#CF4B78', '#D2483A', '#D99A1E', '#1E9E78', '#2A93C2', '#4A6FE0', '#2AA198', '#B0569F'];
 
 export default function Segmentation() {
   const [evaluation, setEvaluation] = useState<any>(null);
@@ -41,7 +41,7 @@ export default function Segmentation() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-indigo-600"></div>
       </div>
     );
   }
@@ -108,11 +108,11 @@ export default function Segmentation() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={comparison} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="algorithm" tick={{ fontSize: 12, fill: '#64748B' }} />
-                <YAxis domain={[0, 'auto']} tick={{ fontSize: 11, fill: '#64748B' }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#8A98922E" />
+                <XAxis dataKey="algorithm" tick={{ fontSize: 12, fill: '#6D7B76' }} />
+                <YAxis domain={[0, 'auto']} tick={{ fontSize: 11, fill: '#6D7B76' }} />
                 <RechartsTooltip content={<ModernChartTooltip />} />
-                <Bar dataKey="silhouette_score" fill="#6366F1" radius={[6, 6, 0, 0]} name="Silhouette Score" />
+                <Bar dataKey="silhouette_score" fill="#2E44D1" radius={[6, 6, 0, 0]} name="Silhouette Score" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -186,18 +186,18 @@ export default function Segmentation() {
         <div className="h-96">
           <ResponsiveContainer width="100%" height="100%">
             <ScatterChart margin={{ top: 20, right: 20, bottom: 30, left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#8A98922E" />
               <XAxis 
                 type="number" 
                 dataKey="x" 
                 name="PCA 1" 
-                tick={{ fontSize: 11, fill: '#64748B' }} 
+                tick={{ fontSize: 11, fill: '#6D7B76' }} 
               />
               <YAxis 
                 type="number" 
                 dataKey="y" 
                 name="PCA 2" 
-                tick={{ fontSize: 11, fill: '#64748B' }} 
+                tick={{ fontSize: 11, fill: '#6D7B76' }} 
               />
               <ZAxis range={[50, 50]} />
               <RechartsTooltip cursor={{ strokeDasharray: '3 3' }} content={<ModernChartTooltip />} />

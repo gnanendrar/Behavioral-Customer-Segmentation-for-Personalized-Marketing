@@ -9,7 +9,7 @@ import PageHeader from '../components/common/PageHeader';
 import StatCard from '../components/common/StatCard';
 import { Link } from 'react-router-dom';
 
-const COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#EF4444', '#F59E0B', '#10B981', '#06B6D4', '#3B82F6', '#14B8A6', '#A855F7'];
+const COLORS = ['#2E44D1', '#7A55DB', '#CF4B78', '#D2483A', '#D99A1E', '#1E9E78', '#2A93C2', '#4A6FE0', '#2AA198', '#B0569F'];
 
 const RescueQueue = () => {
   const [queue, setQueue] = useState<Customer[]>([]);

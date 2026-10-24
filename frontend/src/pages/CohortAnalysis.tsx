@@ -7,7 +7,7 @@ import PageHeader from '../components/common/PageHeader';
 import StatCard from '../components/common/StatCard';
 import { TruncatedXAxisTick, ModernChartTooltip } from '../components/common/ChartHelpers';
 
-const COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#EF4444', '#F59E0B', '#10B981', '#06B6D4', '#3B82F6', '#14B8A6', '#A855F7'];
+const COLORS = ['#2E44D1', '#7A55DB', '#CF4B78', '#D2483A', '#D99A1E', '#1E9E78', '#2A93C2', '#4A6FE0', '#2AA198', '#B0569F'];
 
 const CohortAnalysis = () => {
   const [cohorts, setCohorts] = useState<CohortData[]>([]);
@@ -78,7 +78,7 @@ const CohortAnalysis = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-indigo-600"></div>
       </div>
     );
   }
@@ -114,14 +114,14 @@ const CohortAnalysis = () => {
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 15, right: 25, left: 10, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748B' }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#64748B' }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#8A98922E" />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#6D7B76' }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#6D7B76' }} />
                 <ModernChartTooltip valueSuffix="/100" />
                 <Legend wrapperStyle={{ paddingTop: 10, fontSize: '12px' }} />
-                <Line type="monotone" dataKey="Value" stroke="#6366F1" strokeWidth={2.5} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="Engagement" stroke="#10B981" strokeWidth={2.5} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="Risk" stroke="#EF4444" strokeWidth={2.5} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="Value" stroke="#2E44D1" strokeWidth={2.5} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="Engagement" stroke="#1E9E78" strokeWidth={2.5} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="Risk" stroke="#D2483A" strokeWidth={2.5} dot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -132,13 +132,13 @@ const CohortAnalysis = () => {
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={segDistData} margin={{ top: 10, right: 25, left: 10, bottom: 45 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#8A98922E" />
                 <XAxis 
                   dataKey="name" 
                   interval={0}
                   tick={<TruncatedXAxisTick maxChars={12} angle={-35} />} 
                 />
-                <YAxis tick={{ fontSize: 11, fill: '#64748B' }} tickFormatter={(v) => `${v}%`} />
+                <YAxis tick={{ fontSize: 11, fill: '#6D7B76' }} tickFormatter={(v) => `${v}%`} />
                 <ModernChartTooltip valueSuffix="%" />
                 <Legend wrapperStyle={{ paddingTop: 12, fontSize: '11px' }} />
                 {Array.from(allSegments).map((seg, idx) => (

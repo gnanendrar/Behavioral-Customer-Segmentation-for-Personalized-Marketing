@@ -5,7 +5,7 @@ import { getDataQuality } from '../services/api';
 import PageHeader from '../components/common/PageHeader';
 import StatCard from '../components/common/StatCard';
 
-const COLORS = ['#3B82F6', '#8B5CF6', '#10B981'];
+const COLORS = ['#4A6FE0', '#7A55DB', '#1E9E78'];
 
 const DataQuality = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -29,7 +29,7 @@ const DataQuality = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-200 border-t-indigo-600"></div>
       </div>
     );
   }

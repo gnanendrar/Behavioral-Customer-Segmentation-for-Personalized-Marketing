@@ -79,7 +79,7 @@ const ModelEvaluation = () => {
       </div>
 
       {evaluation && (
-        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+        <div className="bg-indigo-600 rounded-2xl p-6 text-white">
           <div className="flex justify-between items-start">
             <div>
               <h2 className="text-xl font-bold mb-1 flex items-center">
@@ -126,17 +126,17 @@ const ModelEvaluation = () => {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 10, right: 15, left: 0, bottom: 45 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#8A98922E" />
                 <XAxis 
                   dataKey="name" 
                   interval={0}
                   tick={<TruncatedXAxisTick maxChars={13} angle={-35} />} 
                 />
-                <YAxis domain={[0, 1]} tick={{ fontSize: 11, fill: '#64748B' }} />
+                <YAxis domain={[0, 1]} tick={{ fontSize: 11, fill: '#6D7B76' }} />
                 <ModernChartTooltip />
                 <Bar dataKey="Silhouette" radius={[4, 4, 0, 0]}>
                   {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.Algorithm === 'kmeans' ? '#6366F1' : '#10B981'} />
+                    <Cell key={`cell-${index}`} fill={entry.Algorithm === 'kmeans' ? '#2E44D1' : '#1E9E78'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -150,17 +150,17 @@ const ModelEvaluation = () => {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 10, right: 15, left: 0, bottom: 45 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#8A98922E" />
                 <XAxis 
                   dataKey="name" 
                   interval={0}
                   tick={<TruncatedXAxisTick maxChars={13} angle={-35} />} 
                 />
-                <YAxis tick={{ fontSize: 11, fill: '#64748B' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#6D7B76' }} />
                 <ModernChartTooltip />
                 <Bar dataKey="DaviesBouldin" radius={[4, 4, 0, 0]}>
                   {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.Algorithm === 'kmeans' ? '#F59E0B' : '#EC4899'} />
+                    <Cell key={`cell-${index}`} fill={entry.Algorithm === 'kmeans' ? '#D99A1E' : '#CF4B78'} />
                   ))}
                 </Bar>
               </BarChart>

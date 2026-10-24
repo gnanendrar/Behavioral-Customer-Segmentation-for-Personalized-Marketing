@@ -1,98 +1,128 @@
-import { Fragment } from 'react';
-import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Upload, 
-  ShieldCheck, 
-  Database, 
-  GitBranch, 
-  Users, 
-  LifeBuoy, 
-  Target, 
-  Bot, 
-  Megaphone, 
-  Route, 
-  FlaskConical, 
-  CalendarDays, 
-  TrendingUp, 
-  BarChart3, 
-  FileDown,
-  BrainCircuit
-} from 'lucide-react';
+import { NavLink, Link } from 'react-router-dom';
+import { PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
 import { useAppStore } from '../../stores/appStore';
+import { NAV_GROUPS } from '../../lib/navigation';
+import { LogoMark, Wordmark } from '../common/Logo';
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Data Upload', href: '/upload', icon: Upload },
-  { name: 'Data Quality', href: '/quality', icon: ShieldCheck },
-  { name: 'Feature Store', href: '/features', icon: Database },
-  { name: 'Segmentation', href: '/segmentation', icon: GitBranch },
-  { name: 'Segment Explorer', href: '/segments', icon: Users },
-  { name: 'Rescue Queue', href: '/rescue', icon: LifeBuoy },
-  { name: 'Marketing Actions', href: '/marketing', icon: Target },
-  { name: 'AI Copilot', href: '/copilot', icon: Bot },
-  { name: 'Campaign Gen', href: '/campaign', icon: Megaphone },
-  { name: 'Behavior Journey', href: '/journey', icon: Route },
-  { name: 'What-If Simulator', href: '/simulator', icon: FlaskConical },
-  { name: 'Cohort Analysis', href: '/cohorts', icon: CalendarDays },
-  { name: 'Revenue Intel', href: '/revenue', icon: TrendingUp },
-  { name: 'Model Evaluation', href: '/model', icon: BarChart3 },
-  { name: 'Reports', href: '/reports', icon: FileDown },
-];
+function NavContent({ compact, onNavigate }: { compact: boolean; onNavigate?: () => void }) {
+  return (
+    <nav className="flex-1 overflow-y-auto px-3 pb-6 pt-2" aria-label="Main">
+      {NAV_GROUPS.map((group) => (
+        <div key={group.label} className="mt-4 first:mt-0">
+          {!compact && (
+            <p className="px-3 pb-1.5 text-[12px] font-medium text-gray-500">{group.label}</p>
+          )}
+          {compact && <div className="mx-3 mb-2 border-t border-gray-200 first:hidden" />}
+          <ul className="space-y-0.5">
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <li key={item.href}>
+                  <NavLink
+                    to={item.href}
+                    onClick={onNavigate}
+                    title={compact ? item.name : undefined}
+                    className={({ isActive }) =>
+                      `group relative flex items-center gap-3 rounded-lg px-3 py-[7px] text-[14px] transition-colors ${
+                        isActive
+                          ? 'bg-white text-gray-900 font-semibold shadow-sm ring-1 ring-gray-200'
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      } ${compact ? 'justify-center px-0' : ''}`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        {isActive && !compact && (
+                          <span className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-indigo-600" />
+                        )}
+                        <Icon
+                          className={`h-[18px] w-[18px] shrink-0 ${isActive ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-600'}`}
+                          strokeWidth={1.8}
+                          aria-hidden="true"
+                        />
+                        {!compact && <span className="truncate">{item.name}</span>}
+                      </>
+                    )}
+                  </NavLink>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </nav>
+  );
+}
 
 export default function Sidebar() {
-  const { sidebarOpen } = useAppStore();
+  const { sidebarOpen, toggleSidebar, mobileNavOpen, setMobileNavOpen } = useAppStore();
+  const compact = !sidebarOpen;
 
   return (
-    <div 
-      className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-white border-r border-gray-200 transition-all duration-300 ${
-        sidebarOpen ? 'w-64' : 'w-20'
-      }`}
-    >
-      <div className="flex h-16 shrink-0 items-center justify-center border-b border-gray-200 px-4">
-        <BrainCircuit className="h-8 w-8 text-indigo-600 shrink-0" />
-        {sidebarOpen && (
-          <span className="ml-3 text-xl font-bold text-gray-900 whitespace-nowrap">
-            BehaviorIQ
-          </span>
+    <>
+      {/* Desktop rail */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-gray-200 bg-gray-50 transition-[width] duration-200 lg:flex ${
+          compact ? 'w-[72px]' : 'w-[248px]'
+        }`}
+      >
+        <div className={`flex h-16 shrink-0 items-center ${compact ? 'justify-center' : 'justify-between px-5'}`}>
+          <Link to="/" className="flex items-center gap-2.5" aria-label="BehaviorIQ home">
+            <LogoMark />
+            {!compact && <Wordmark />}
+          </Link>
+          {!compact && (
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+              aria-label="Collapse sidebar"
+            >
+              <PanelLeftClose className="h-[18px] w-[18px]" strokeWidth={1.8} />
+            </button>
+          )}
+        </div>
+        <NavContent compact={compact} />
+        {compact && (
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className="mx-auto mb-4 rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+            aria-label="Expand sidebar"
+          >
+            <PanelLeftOpen className="h-[18px] w-[18px]" strokeWidth={1.8} />
+          </button>
         )}
-      </div>
+      </aside>
 
-      <div className="flex flex-1 flex-col overflow-y-auto px-3 py-4 custom-scrollbar">
-        <nav className="flex-1 space-y-1">
-          {navigation.map((item) => {
-            const Icon = item.icon;
-            
-            // Add dividers after specific items
-            const showDivider = ['/features', '/marketing', '/simulator'].includes(item.href);
-
-            return (
-              <Fragment key={item.name}>
-                <NavLink
-                  to={item.href}
-                  className={({ isActive }) =>
-                    `group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-indigo-50 text-indigo-600'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                    }`
-                  }
-                  title={!sidebarOpen ? item.name : undefined}
-                >
-                  <Icon 
-                    className={`h-5 w-5 shrink-0 ${sidebarOpen ? 'mr-3' : 'mx-auto'}`}
-                    aria-hidden="true" 
-                  />
-                  {sidebarOpen && <span>{item.name}</span>}
-                </NavLink>
-                {showDivider && (
-                  <div className="my-2 border-t border-gray-100" />
-                )}
-              </Fragment>
-            );
-          })}
-        </nav>
-      </div>
-    </div>
+      {/* Mobile drawer */}
+      {mobileNavOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
+          <button
+            type="button"
+            aria-label="Close navigation"
+            className="absolute inset-0 bg-gray-950/40"
+            onClick={() => setMobileNavOpen(false)}
+          />
+          <aside className="absolute inset-y-0 left-0 flex w-[272px] flex-col border-r border-gray-200 bg-gray-50 shadow-lg">
+            <div className="flex h-16 items-center justify-between px-5">
+              <Link to="/" className="flex items-center gap-2.5" onClick={() => setMobileNavOpen(false)}>
+                <LogoMark />
+                <Wordmark />
+              </Link>
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen(false)}
+                className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100"
+                aria-label="Close navigation"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <NavContent compact={false} onNavigate={() => setMobileNavOpen(false)} />
+          </aside>
+        </div>
+      )}
+    </>
   );
 }

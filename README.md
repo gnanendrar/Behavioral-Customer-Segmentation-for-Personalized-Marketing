@@ -4,6 +4,25 @@
 
 A production-quality full-stack AI platform that analyzes real customer behavior across purchase history, engagement patterns, and product usage to automatically discover meaningful customer segments, generate behavioral scores, and produce specific marketing actions for every segment.
 
+## 🎬 Demo
+
+![BehaviorIQ dashboard](docs/screenshots/dashboard-light.png)
+
+A one-minute walkthrough is in [`docs/demo/BehaviorIQ_UI_demo.mp4`](docs/demo/BehaviorIQ_UI_demo.mp4): landing page, dashboard, command palette, segment explorer, rescue queue, customer profile and dark mode.
+
+| Landing | Dark mode |
+|---|---|
+| ![Landing page](docs/screenshots/landing-light.png) | ![Dashboard, dark](docs/screenshots/dashboard-dark.png) |
+| ![Command palette](docs/screenshots/command-palette.png) | ![Customer profile, dark](docs/screenshots/customer-dark.png) |
+
+### Interface highlights
+- **Light and dark themes** that follow your system setting and remember your choice.
+- **Ctrl/⌘ K command palette** to jump to any page, or straight to a customer by ID (e.g. `CUST-00042`).
+- **Sidebar grouped by workflow**: Prepare → Segment → Act → Measure.
+- **Dashboard** that leads with the finding (which segments bring in the revenue), with a segment table, churn risk and the next action for each segment.
+- **Live status and alert count** from the backend, with no placeholder numbers.
+- Works on phones (drawer navigation, no sideways scrolling), keyboard focus is visible, and reduced-motion settings are respected.
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -86,7 +105,8 @@ behavioriq/
 │   └── utils/            # Helpers & exporters
 ├── frontend/             # React + TypeScript + Tailwind
 │   └── src/
-│       ├── pages/        # 18 pages
+│       ├── pages/        # 18 pages (landing + 16 app views + customer profile)
+│       ├── lib/          # navigation map, palette
 │       ├── components/   # Reusable UI components
 │       ├── services/     # API client
 │       └── stores/       # Zustand state
@@ -114,7 +134,7 @@ See the full dataset specification in the implementation plan for all supported 
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React 18, TypeScript, Tailwind CSS, Recharts, Framer Motion |
+| Frontend | React 19, TypeScript, Tailwind CSS 4, Recharts, Framer Motion, Mona Sans |
 | Backend | Python, FastAPI, Pydantic |
 | ML | scikit-learn, pandas, numpy, scipy |
 | AI | Google Gemini API (optional, has rule-based fallback) |
